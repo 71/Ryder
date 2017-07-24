@@ -6,8 +6,8 @@ one method to another. By extension, it can also redirect property accesses, and
 subscriptions / raises.
 
 [![NuGet](https://img.shields.io/nuget/v/Ryder.svg)](https://nuget.org/packages/Ryder)
-[![Latest release](https://img.shields.io/github/6A/Ryder.svg)](../../releases/latest)
-[![Issues](https://img.shields.io/github/issues-raw/badges/6A/Ryder.svg)](../../issues)
+[![Latest release](https://img.shields.io/github/release/6A/Ryder.svg)](../../releases/latest)
+[![Issues](https://img.shields.io/github/issues-raw/6A/Ryder.svg)](../../issues)
 [![License](https://img.shields.io/github/license/6A/Ryder.svg)](./LICENSE.md)
 
 ## Get started
