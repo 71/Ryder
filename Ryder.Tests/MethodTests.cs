@@ -1,4 +1,3 @@
-#if false
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -149,5 +148,3 @@ namespace Ryder.Tests
         #endregion
     }
 }
-
-#endif
