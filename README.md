@@ -47,6 +47,9 @@ DateTime now = ((DateTime)r.GetOriginal(null)).ToBinary(); // => A very large nu
 - `PropertyRedirection`: `Redirect(Expression<..>, Expression<..>)`, `Redirect(PropertyInfo, PropertyInfo)`.
 - `EventRedirection`: `Redirect(Expression<..>, Expression<..>)`, `Redirect(EventInfo, EventInfo)`.
 
+##### Gloriously unsafe:
+By default, Ryder makes many runtime checks when you create a new `Redirection` ([see by yourself](./Ryder/Redirection.cs)). Should you decide to do some *very* experimental and unsafe stuff, you can disable all those checks by setting the static property `Redirection.SkipChecks` to `true`.
+
 ## Installation
 You can install Ryder through the NuGet package manager:
 ```powershell
