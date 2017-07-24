@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Diagnostics;
+using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -10,7 +10,7 @@ namespace Ryder
     /// </summary>
     public abstract class Redirection : IDisposable
     {
-        protected bool isRedirecting;
+        internal bool isRedirecting;
 
         /// <summary>
         ///   Gets or sets whether or not the calls shall be redirected.
@@ -56,14 +56,27 @@ namespace Ryder
 
         private static void CheckParameters(ParameterInfo a, ParameterInfo b, string paramName)
         {
-            Debug.Assert(a != null);
-            Debug.Assert(b != null);
-
             if (a.ParameterType != b.ParameterType)
                 throw new ArgumentException($"Expected parameters '{a}' and '{b}' to have the same type.", paramName);
             if (a.IsOut != b.IsOut || a.IsIn != b.IsIn)
                 throw new ArgumentException($"Expected parameters '{a}' and '{b}' to have the same signature.", paramName);
         }
+
+        /// <summary>
+        /// <para>
+        ///   Gets or sets whether or not some checks should be disabled when creating
+        ///   a <see cref="Redirection"/>.
+        /// </para>
+        /// <para>
+        ///   Warning: Those checks are done for a reason, but may, in some cases, keep something
+        ///   completely legal from happing.
+        /// </para>
+        /// </summary>
+        /// <seealso href="https://github.com/6A/Ryder/blob/master/Ryder/Redirection.cs">
+        ///   Code for this class, to see what checks are done, and what checks can be skipped.
+        /// </seealso>
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        public static bool SkipChecks { get; set; }
 
         /// <summary>
         ///   Redirects calls to the <paramref name="original"/> method
@@ -87,7 +100,11 @@ namespace Ryder
             // Check if different kind
             if (original.IsConstructor != replacement.IsConstructor)
                 throw new ArgumentException("Expected both methods to be of the same kind (ctor or method).", nameof(replacement));
-            
+
+            // Skip checks if needed
+            if (SkipChecks)
+                goto End;
+
             // Get return type
             Type originalReturnType = (original as MethodInfo)?.ReturnType ?? (original as ConstructorInfo)?.DeclaringType;
 
@@ -163,6 +180,7 @@ namespace Ryder
                 CheckParameters(originalParams[i + diff], replacementParams[i], nameof(replacement));
             }
 
+            End:
             return new MethodRedirection(original, replacement, true);
         }
 
@@ -215,6 +233,9 @@ namespace Ryder
             if (replacement == null)
                 throw new ArgumentNullException(nameof(replacement));
 
+            if (SkipChecks)
+                goto End;
+
             // Check original
             MethodInfo anyOriginalMethod = original.GetMethod ?? original.SetMethod;
 
@@ -238,11 +259,13 @@ namespace Ryder
                     throw new ArgumentException(SignatureError, nameof(replacement));
 
                 // Check match: instance of same type
+                // Actually, I ain't doing it just yet. There are cases where the declaring
+                // type is different.
                 //if (original.DeclaringType != replacement.DeclaringType)
                 //    throw new ArgumentException(SignatureError, nameof(replacement));
             }
 
-            // Check match: event type
+            // Check match: property type
             if (original.PropertyType != replacement.PropertyType)
                 throw new ArgumentException("Expected same property type.", nameof(replacement));
 
@@ -251,6 +274,7 @@ namespace Ryder
                 (original.SetMethod == null) != (replacement.SetMethod == null))
                 throw new ArgumentException(SignatureError, nameof(replacement));
 
+            End:
             return new PropertyRedirection(original, replacement, true);
         }
 
@@ -267,6 +291,9 @@ namespace Ryder
                 throw new ArgumentNullException(nameof(original));
             if (replacement == null)
                 throw new ArgumentNullException(nameof(replacement));
+
+            if (SkipChecks)
+                goto End;
 
             // Check original
             MethodInfo anyOriginalMethod = original.AddMethod ?? original.RemoveMethod ?? original.RaiseMethod;
@@ -291,8 +318,9 @@ namespace Ryder
                     throw new ArgumentException(SignatureError, nameof(replacement));
 
                 // Check match: instance of same type
-                if (original.DeclaringType != replacement.DeclaringType)
-                    throw new ArgumentException(SignatureError, nameof(replacement));
+                // See property for why this is commented ^
+                //if (original.DeclaringType != replacement.DeclaringType)
+                //    throw new ArgumentException(SignatureError, nameof(replacement));
             }
 
             // Check match: event type
@@ -305,6 +333,7 @@ namespace Ryder
                 (original.RaiseMethod == null) != (replacement.RaiseMethod == null))
                 throw new ArgumentException(SignatureError, nameof(replacement));
 
+            End:
             return new EventRedirection(original, replacement, true);
         }
 

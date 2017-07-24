@@ -1,20 +1,54 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Common properties -->
     <TargetFramework>netstandard1.3</TargetFramework>
+    <Version>0.1.0</Version>
+    <FileVersion>$(Version).0</FileVersion>
+
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>Ryder.snk</AssemblyOriginatorKeyFile>
+    <DisableImplicitFrameworkReferences>True</DisableImplicitFrameworkReferences>
+
+    <GenerateDocumentationFile Condition=" '$(Configuration)' == 'Release' ">True</GenerateDocumentationFile>
+    <GeneratePackageOnBuild Condition=" '$(Configuration)' == 'Release' ">True</GeneratePackageOnBuild>
+
+    <SystemPackageVersion>4.3.0</SystemPackageVersion>
+
+    <!-- NuGet properties -->
+    <Summary>Minimal .NET Core library used to redirect calls from one method to another.</Summary>
+    <Description>$(Summary) Ryder also exists as a single lightweight .cs file; please see the repository.</Description>
+    <Copyright>Copyright 2017 (c) Gregoire Geis</Copyright>
+    <Authors>Gregoire Geis</Authors>
+
+    <PackageId>Ryder</PackageId>
+    <PackageVersion>$(Version)</PackageVersion>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+    <PackageReleaseNotes>First release</PackageReleaseNotes>
+    <PackageTags>redirect hook detours patch emit intercept</PackageTags>
+
+    <PackageProjectUrl>https://github.com/6A/Ryder</PackageProjectUrl>
+    <PackageLicenseUrl>$(PackageProjectUrl)/blob/master/LICENSE.md</PackageLicenseUrl>
+
+    <RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(BuildingInsideVisualStudio)' == 'True' ">
     <PostBuildEvent>dotnet "$(SolutionDir)$(SolutionName).Lightweight\bin\$(Configuration)\$(SolutionName).Lightweight.dll" --directory "$(SolutionDir)$(SolutionName)" --output "$(SolutionDir)$(SolutionName).Lightweight\$(SolutionName).Lightweight.cs"</PostBuildEvent>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-  </PropertyGroup>
+  <ItemGroup Label="Packages">
+    <PackageReference Remove="Microsoft.NETLibrary" />
 
-  <ItemGroup>
-    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
-    <PackageReference Include="System.Reflection.Emit.ILGeneration" Version="4.3.0" />
-    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
+    <PackageReference Include="System.Linq" Version="$(SystemPackageVersion)" />
+    <PackageReference Include="System.Linq.Expressions" Version="$(SystemPackageVersion)" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="$(SystemPackageVersion)" />
+    <PackageReference Include="System.Reflection.Extensions" Version="$(SystemPackageVersion)" />
+    <PackageReference Include="System.Reflection.TypeExtensions" Version="$(SystemPackageVersion)" />
+    <PackageReference Include="System.Runtime.Extensions" Version="$(SystemPackageVersion)" />
+    <PackageReference Include="System.Runtime.InteropServices" Version="$(SystemPackageVersion)" />
+    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="$(SystemPackageVersion)" />
   </ItemGroup>
 
 </Project>

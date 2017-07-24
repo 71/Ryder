@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
@@ -9,7 +8,6 @@ namespace Ryder
     /// <summary>
     ///   Static class that provides useful helpers to the <see cref="Redirection"/> sub-classes.
     /// </summary>
-    [DebuggerStepThrough]
     internal static class Helpers
     {
         private static Func<DynamicMethod, RuntimeMethodHandle> FindMethodHandle;
@@ -70,7 +68,7 @@ namespace Ryder
                 result[10] = 0xFF;
                 result[11] = 0xE0;
 
-                Array.Copy(BitConverter.GetBytes(destination.ToInt64()), 0, result, 2, 8);
+                BitConverter.GetBytes(destination.ToInt64()).CopyTo(result, 2);
 
                 return result;
             }
@@ -81,7 +79,7 @@ namespace Ryder
                 result[0] = 0x68;
                 result[5] = 0xC3;
 
-                Array.Copy(BitConverter.GetBytes(destination.ToInt32()), 0, result, 1, 4);
+                BitConverter.GetBytes(destination.ToInt32()).CopyTo(result, 1);
 
                 return result;
             }

@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using Xunit;
 
 namespace Ryder.Tests
@@ -7,17 +8,25 @@ namespace Ryder.Tests
     {
         public static DateTime Random => new DateTime().AddSeconds(new Random().NextDouble() * 2_000_000_000);
 
+        /// <summary>
+        ///   Trims milliseconds from the given <see cref="DateTime"/>.
+        /// </summary>
+        private static DateTime Trim(DateTime dt)
+        {
+            return dt.Millisecond == 0 ? dt : dt.AddMilliseconds(-dt.Millisecond);
+        }
+
         [Fact]
         public void TestStaticProperties()
         {
-            Assert.NotEqual(DateTime.Now, Random);
+            Assert.NotEqual(Trim(DateTime.Now), Trim(Random));
 
             using (Redirection.Redirect(() => Random, () => DateTime.Now))
             {
-                Assert.Equal(DateTime.Now, Random);
+                Assert.Equal(Trim(DateTime.Now), Trim(Random));
             }
 
-            Assert.NotEqual(DateTime.Now, Random);
+            Assert.NotEqual(Trim(DateTime.Now), Trim(Random));
         }
 
         public virtual int Value => 1;
@@ -29,7 +38,7 @@ namespace Ryder.Tests
 
             Assert.NotEqual(Value, overriden.Value);
 
-            using (Redirection.Redirect(() => this.Value, () => overriden.Value))
+            using (Redirection.Redirect(typeof(PropertyTests).GetProperty(nameof(Value)), typeof(OverridePropertyTests).GetProperty(nameof(Value))))
             {
                 Assert.Equal(Value, overriden.Value);
             }
