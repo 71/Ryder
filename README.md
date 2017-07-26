@@ -16,24 +16,22 @@ subscriptions / raises.
 public static int Incremented(int nbr) => nbr + 1;
 public static int Decremented(int nbr) => nbr - 1;
 
-MethodRedirection r = Redirection.Redirect(() => Incremented(0), () => Decremented(1));
+Incremented(1); // => 2.
 
-Console.WriteLine(Incremented(1)); // => 0.
+MethodRedirection r = Redirection.Redirect<Func<int, int>>(Incremented, Decremented);
 
-// Note: you can also invoke the original method:
-int incremented = (int)r.InvokeOriginal(null, 1); // => 2.
-```
+Incremented(1); // => 0.
 
-#### Redirect a property
-```csharp
-public static DateTime PatchedNow => DateTime.FromBinary(0);
+// You can also invoke the original method:
+r.InvokeOriginal(null, 1); // => 2.
 
-PropertyRedirection r = Redirection.Redirect(() => DateTime.Now, () => PatchedNow);
+// You can also stop the redirection...
+r.Stop(); // or r.IsRedirecting = false, or r.Dispose().
+Incremented(1); // => 2.
 
-Console.WriteLine(DateTime.Now.ToBinary()); // => 0.
-
-// Note: you can also access the original property:
-DateTime now = ((DateTime)r.GetOriginal(null)).ToBinary(); // => A very large number.
+// ... and restart it
+r.Start(); // or r.IsRedirecting = true, unless you disposed it, in which case it's no longer usable
+Incremented(1); // => 0.
 ```
 
 #### Using Reactive Extensions
@@ -49,11 +47,14 @@ using (Redirection.Observe(method)
                   .Where(_ => count++ % 2 == 0)
                   .Subscribe(ctx => ctx.ReturnValue = bday))
 {
-    Assert.Equal(DateTime.Now, bday);
-    Assert.NotEqual(DateTime.Now, bday);
-    Assert.Equal(DateTime.Now, bday);
-    Assert.NotEqual(DateTime.Now, bday);
+    DateTime.Now.ShouldBe(bday);
+    DateTime.Now.ShouldNotBe(bday);
+    DateTime.Now.ShouldBe(bday);
+    DateTime.Now.ShouldNotBe(bday);
 }
+
+DateTime.Now.ShouldNotBe(bday);
+DateTime.Now.ShouldNotBe(bday);
 ```
 
 #### Other features
@@ -66,6 +67,9 @@ using (Redirection.Observe(method)
 - `MethodRedirection`: `Redirect(Expression<..>, Expression<..>)`, `Redirect(Delegate, Delegate)`, `Redirect(MethodBase, MethodBase)`.
 - `PropertyRedirection`: `Redirect(Expression<..>, Expression<..>)`, `Redirect(PropertyInfo, PropertyInfo)`.
 - `EventRedirection`: `Redirect(Expression<..>, Expression<..>)`, `Redirect(EventInfo, EventInfo)`.
+
+##### Tests
+All features are tested in [Ryder.Tests](./Ryder.Tests). Please check it out, as it contains some real-world-usage code.
 
 ##### Gloriously unsafe:
 By default, Ryder makes many runtime checks when you create a new `Redirection` ([see by yourself](./Ryder/Redirection.cs)). Should you decide to do some *very* experimental and unsafe stuff, you can disable all those checks by setting the static property `Redirection.SkipChecks` to `true`.
