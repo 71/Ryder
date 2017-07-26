@@ -48,7 +48,7 @@ namespace Ryder.Tests
 
             OnMultiply.GetInvocationList().Length.ShouldBe(1);
             OnMultiply -= Multiply;
-            OnMultiply.GetInvocationList().Length.ShouldBe(0);
+            OnMultiply.ShouldBeNull();
         }
     }
 }

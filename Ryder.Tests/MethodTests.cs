@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using Shouldly;
 using Xunit;
 
 namespace Ryder.Tests
@@ -18,14 +19,14 @@ namespace Ryder.Tests
         [Fact]
         public void TestStaticMethods()
         {
-            Assert.NotEqual(Original(), Replacement());
+            Original().ShouldNotBe(Replacement());
 
             using (Redirection.Redirect<Func<bool>>(Original, Replacement))
             {
-                Assert.Equal(Original(), Replacement());
+                Original().ShouldBe(Replacement());
             }
 
-            Assert.NotEqual(Original(), Replacement());
+            Original().ShouldNotBe(Replacement());
         }
         #endregion
 
@@ -38,14 +39,14 @@ namespace Ryder.Tests
         [Fact]
         public void TestStaticMethodsWithParameters()
         {
-            Assert.NotEqual(PlusOne(1), PlusTwo(1));
+            PlusOne(1).ShouldNotBe(PlusTwo(1));
 
             using (Redirection.Redirect<Func<int, int>>(PlusOne, PlusTwo))
             {
-                Assert.Equal(PlusOne(1), PlusTwo(1));
+                PlusOne(1).ShouldBe(PlusTwo(1));
             }
 
-            Assert.NotEqual(PlusOne(1), PlusTwo(1));
+            PlusOne(1).ShouldNotBe(PlusTwo(1));
         }
         #endregion
 
@@ -63,7 +64,7 @@ namespace Ryder.Tests
             MethodTests tests1 = new MethodTests { Value = 10 };
             MethodTests tests2 = new MethodTests { Value = 10 };
 
-            Assert.Equal(tests1.Value, tests2.Value);
+            tests1.Value.ShouldBe(tests2.Value);
 
             tests1.IncrementValue();
 
@@ -71,9 +72,9 @@ namespace Ryder.Tests
             {
                 tests2.IncrementValue();
 
-                Assert.NotEqual(tests1.Value, tests2.Value);
-                Assert.Equal(tests1.Value, 11);
-                Assert.Equal(tests2.Value, 9);
+                tests1.Value.ShouldNotBe(tests2.Value);
+                tests1.Value.ShouldBe(11);
+                tests2.Value.ShouldBe(9);
 
                 redirection.Stop();
 
@@ -82,9 +83,9 @@ namespace Ryder.Tests
                 tests1.IncrementValue();
                 tests2.IncrementValue();
 
-                Assert.Equal(tests1.Value, tests2.Value);
-                Assert.Equal(tests1.Value, 1);
-                Assert.Equal(tests2.Value, 1);
+                tests1.Value.ShouldBe(tests2.Value);
+                tests1.Value.ShouldBe(1);
+                tests2.Value.ShouldBe(1);
             }
         }
         #endregion
@@ -101,7 +102,7 @@ namespace Ryder.Tests
             MethodTests tests1 = new MethodTests { Value = 10 };
             MethodTests tests2 = new MethodTests { Value = 10 };
 
-            Assert.Equal(tests1.Value, tests2.Value);
+            tests1.Value.ShouldBe(tests2.Value);
 
             tests1.IncrementValueBy(5);
 
@@ -109,9 +110,9 @@ namespace Ryder.Tests
             {
                 tests2.IncrementValueBy(5);
 
-                Assert.NotEqual(tests1.Value, tests2.Value);
-                Assert.Equal(tests1.Value, 15);
-                Assert.Equal(tests2.Value, 5);
+                tests1.Value.ShouldNotBe(tests2.Value);
+                tests1.Value.ShouldBe(15);
+                tests2.Value.ShouldBe(5);
 
                 redirection.Stop();
 
@@ -120,9 +121,9 @@ namespace Ryder.Tests
                 tests1.IncrementValueBy(3);
                 tests2.IncrementValueBy(3);
 
-                Assert.Equal(tests1.Value, tests2.Value);
-                Assert.Equal(tests1.Value, 3);
-                Assert.Equal(tests2.Value, 3);
+                tests1.Value.ShouldBe(tests2.Value);
+                tests1.Value.ShouldBe(3);
+                tests2.Value.ShouldBe(3);
             }
         }
         #endregion
@@ -131,16 +132,16 @@ namespace Ryder.Tests
         [Fact]
         public void TestInvokeOriginal()
         {
-            Assert.NotEqual(Original(), Replacement());
+            Original().ShouldNotBe(Replacement());
 
             using (var redirection = Redirection.Redirect<Func<bool>>(Original, Replacement))
             {
-                Assert.Equal(Original(), Replacement());
-                Assert.NotEqual(Original(), redirection.InvokeOriginal(null));
+                Original().ShouldBe(Replacement());
+                Original().ShouldNotBe(redirection.InvokeOriginal(null));
 
                 redirection.Stop();
 
-                Assert.Equal(Original(), redirection.InvokeOriginal(null));
+                Original().ShouldBe(redirection.InvokeOriginal(null));
             }
         }
         #endregion

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Reactive.Linq;
+using Shouldly;
 using Xunit;
 
 namespace Ryder.Tests
@@ -28,16 +29,16 @@ namespace Ryder.Tests
                               .Where(_ => count++ % 2 == 0)
                               .Subscribe(ctx => ctx.ReturnValue = bday))
             {
-                Assert.Equal(DateTime.Now, bday);
-                Assert.NotEqual(DateTime.Now, bday);
-                Assert.Equal(DateTime.Now, bday);
-                Assert.NotEqual(DateTime.Now, bday);
+                DateTime.Now.ShouldBe(bday);
+                DateTime.Now.ShouldNotBe(bday);
+                DateTime.Now.ShouldBe(bday);
+                DateTime.Now.ShouldNotBe(bday);
             }
 
-            Assert.NotEqual(DateTime.Now, bday);
-            Assert.NotEqual(DateTime.Now, bday);
+            DateTime.Now.ShouldNotBe(bday);
+            DateTime.Now.ShouldNotBe(bday);
 
-            Assert.Equal(count, 4);
+            count.ShouldBe(4);
         }
 
         /// <summary>
@@ -52,14 +53,14 @@ namespace Ryder.Tests
                 .GetProperty(nameof(DateTime.Now), BindingFlags.Static | BindingFlags.Public)
                 .GetGetMethod();
 
-            Assert.NotEqual(DateTime.Now, birthday);
+            DateTime.Now.ShouldNotBe(birthday);
 
             using (Redirection.Observe(method, ctx => ctx.ReturnValue = birthday))
             {
-                Assert.Equal(DateTime.Now, birthday);
+                DateTime.Now.ShouldBe(birthday);
             }
 
-            Assert.NotEqual(DateTime.Now, birthday);
+            DateTime.Now.ShouldNotBe(birthday);
         }
     }
 }

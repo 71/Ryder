@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using Shouldly;
 using Xunit;
 
 namespace Ryder.Tests
@@ -21,44 +22,46 @@ namespace Ryder.Tests
         /// </summary>
         public static DateTime Trim(DateTime dt) => dt.Millisecond == 0 ? dt : dt.AddMilliseconds(-dt.Millisecond);
 
-        private static PropertyInfo RandomProperty
-            => typeof(PropertyTests).GetProperty(nameof(Random), BindingFlags.Static | BindingFlags.Public);
-        private static PropertyInfo NowProperty
-            => typeof(DateTime).GetProperty(nameof(DateTime.Now), BindingFlags.Static | BindingFlags.Public);
-
         [Fact]
         public void TestStaticProperties()
         {
-            Assert.NotEqual(Trim(DateTime.Now), Trim(Random));
+            PropertyInfo randomProperty = typeof(PropertyTests)
+                .GetProperty(nameof(Random), BindingFlags.Static | BindingFlags.Public);
+            PropertyInfo nowProperty = typeof(DateTime)
+                .GetProperty(nameof(DateTime.Now), BindingFlags.Static | BindingFlags.Public);
 
-            using (Redirection.Redirect(RandomProperty, NowProperty))
+
+            DateTime.Now.ShouldNotBe(Random, tolerance: TimeSpan.FromMilliseconds(100));
+
+            using (Redirection.Redirect(randomProperty, nowProperty))
             {
-                Assert.Equal(Trim(DateTime.Now), Trim(Random));
+                DateTime.Now.ShouldBe(Random, tolerance: TimeSpan.FromMilliseconds(100));
             }
 
-            Assert.NotEqual(Trim(DateTime.Now), Trim(Random));
+            DateTime.Now.ShouldNotBe(Random, tolerance: TimeSpan.FromMilliseconds(100));
         }
-
-        private static PropertyInfo BaseValueProperty
-            => typeof(PropertyTests).GetProperty(nameof(Value), BindingFlags.Instance | BindingFlags.Public);
-        private static PropertyInfo OverrideValueProperty
-            => typeof(OverridePropertyTests).GetProperty(nameof(Value), BindingFlags.Instance | BindingFlags.Public);
 
         public virtual int Value => 1;
 
         [Fact]
         public void TestInstanceProperties()
         {
+            PropertyInfo baseValueProperty = typeof(PropertyTests)
+                .GetProperty(nameof(Value), BindingFlags.Instance | BindingFlags.Public);
+            PropertyInfo overrideValueProperty = typeof(OverridePropertyTests)
+                .GetProperty(nameof(Value), BindingFlags.Instance | BindingFlags.Public);
+
+
             OverridePropertyTests overriden = new OverridePropertyTests();
 
-            Assert.NotEqual(Value, overriden.Value);
+            Value.ShouldNotBe(overriden.Value);
 
-            using (Redirection.Redirect(BaseValueProperty, OverrideValueProperty))
+            using (Redirection.Redirect(baseValueProperty, overrideValueProperty))
             {
-                Assert.Equal(Value, overriden.Value);
+                Value.ShouldBe(overriden.Value);
             }
 
-            Assert.NotEqual(Value, overriden.Value);
+            Value.ShouldNotBe(overriden.Value);
         }
 
         private sealed class OverridePropertyTests : PropertyTests
