@@ -36,10 +36,20 @@ namespace Ryder
             Replacement = replacement;
 
             if (original.GetMethod != null)
+            {
+                if (replacement.GetMethod == null)
+                    throw new ArgumentException("A get method must be defined.", nameof(replacement));
+
                 GetRedirection = new MethodRedirection(original.GetMethod, replacement.GetMethod, start);
+            }
 
             if (original.SetMethod != null)
+            {
+                if (replacement.SetMethod == null)
+                    throw new ArgumentException("A set method must be defined.", nameof(replacement));
+                
                 SetRedirection = new MethodRedirection(original.SetMethod, replacement.SetMethod, start);
+            }
         }
 
         /// <summary>
@@ -81,7 +91,7 @@ namespace Ryder
         public object GetOriginal(object obj)
         {
             if (GetRedirection == null)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("A get method must be defined.");
 
             return GetRedirection.InvokeOriginal(obj);
         }
@@ -93,7 +103,7 @@ namespace Ryder
         public object GetOriginal(object obj, params object[] indices)
         {
             if (GetRedirection == null)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("A get method must be defined.");
 
             return GetRedirection.InvokeOriginal(obj, indices);
         }
@@ -105,7 +115,7 @@ namespace Ryder
         public void SetOriginal(object obj, object value)
         {
             if (SetRedirection == null)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("A set method must be defined.");
 
             SetRedirection.InvokeOriginal(obj, value);
         }
@@ -117,7 +127,7 @@ namespace Ryder
         public void SetOriginal(object obj, object value, params object[] indices)
         {
             if (SetRedirection == null)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("A set method must be defined.");
 
             SetRedirection.InvokeOriginal(obj, value, indices);
         }

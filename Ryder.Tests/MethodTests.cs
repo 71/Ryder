@@ -1,8 +1,12 @@
+using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace Ryder.Tests
 {
+    /// <summary>
+    ///   <see cref="MethodRedirection"/> tests.
+    /// </summary>
     public class MethodTests
     {
         #region Static method with no parameters
@@ -16,12 +20,12 @@ namespace Ryder.Tests
         {
             Assert.NotEqual(Original(), Replacement());
 
-            Redirection.Redirect(
-                () => Original(),
-                () => Replacement()
-            );
+            using (Redirection.Redirect<Func<bool>>(Original, Replacement))
+            {
+                Assert.Equal(Original(), Replacement());
+            }
 
-            Assert.Equal(Original(), Replacement());
+            Assert.NotEqual(Original(), Replacement());
         }
         #endregion
 
@@ -36,12 +40,12 @@ namespace Ryder.Tests
         {
             Assert.NotEqual(PlusOne(1), PlusTwo(1));
 
-            Redirection.Redirect(
-                () => PlusOne(0),
-                () => PlusTwo(0)
-            );
+            using (Redirection.Redirect<Func<int, int>>(PlusOne, PlusTwo))
+            {
+                Assert.Equal(PlusOne(1), PlusTwo(1));
+            }
 
-            Assert.Equal(PlusOne(1), PlusTwo(1));
+            Assert.NotEqual(PlusOne(1), PlusTwo(1));
         }
         #endregion
 
@@ -63,27 +67,25 @@ namespace Ryder.Tests
 
             tests1.IncrementValue();
 
-            Redirection redirection = Redirection.Redirect(
-                () => IncrementValue(),
-                () => DecrementValue()
-            );
+            using (Redirection redirection = Redirection.Redirect<Action>(IncrementValue, DecrementValue))
+            {
+                tests2.IncrementValue();
 
-            tests2.IncrementValue();
+                Assert.NotEqual(tests1.Value, tests2.Value);
+                Assert.Equal(tests1.Value, 11);
+                Assert.Equal(tests2.Value, 9);
 
-            Assert.NotEqual(tests1.Value, tests2.Value);
-            Assert.Equal(tests1.Value, 11);
-            Assert.Equal(tests2.Value, 9);
+                redirection.Stop();
 
-            redirection.Stop();
+                tests1.Value = tests2.Value = 0;
 
-            tests1.Value = tests2.Value = 0;
+                tests1.IncrementValue();
+                tests2.IncrementValue();
 
-            tests1.IncrementValue();
-            tests2.IncrementValue();
-
-            Assert.Equal(tests1.Value, tests2.Value);
-            Assert.Equal(tests1.Value, 1);
-            Assert.Equal(tests2.Value, 1);
+                Assert.Equal(tests1.Value, tests2.Value);
+                Assert.Equal(tests1.Value, 1);
+                Assert.Equal(tests2.Value, 1);
+            }
         }
         #endregion
 
@@ -103,27 +105,25 @@ namespace Ryder.Tests
 
             tests1.IncrementValueBy(5);
 
-            Redirection redirection = Redirection.Redirect(
-                () => IncrementValue(),
-                () => DecrementValue()
-            );
+            using (Redirection redirection = Redirection.Redirect<Action<int>>(IncrementValueBy, DecrementValueBy))
+            {
+                tests2.IncrementValueBy(5);
 
-            tests2.IncrementValueBy(5);
+                Assert.NotEqual(tests1.Value, tests2.Value);
+                Assert.Equal(tests1.Value, 15);
+                Assert.Equal(tests2.Value, 5);
 
-            Assert.NotEqual(tests1.Value, tests2.Value);
-            Assert.Equal(tests1.Value, 15);
-            Assert.Equal(tests2.Value, 5);
+                redirection.Stop();
 
-            redirection.Stop();
+                tests1.Value = tests2.Value = 0;
 
-            tests1.Value = tests2.Value = 0;
+                tests1.IncrementValueBy(3);
+                tests2.IncrementValueBy(3);
 
-            tests1.IncrementValueBy(3);
-            tests2.IncrementValueBy(3);
-
-            Assert.Equal(tests1.Value, tests2.Value);
-            Assert.Equal(tests1.Value, 3);
-            Assert.Equal(tests2.Value, 3);
+                Assert.Equal(tests1.Value, tests2.Value);
+                Assert.Equal(tests1.Value, 3);
+                Assert.Equal(tests2.Value, 3);
+            }
         }
         #endregion
 
@@ -133,17 +133,15 @@ namespace Ryder.Tests
         {
             Assert.NotEqual(Original(), Replacement());
 
-            var redirection = Redirection.Redirect<bool, MethodRedirection>(
-                () => Original(),
-                () => Replacement()
-            );
+            using (var redirection = Redirection.Redirect<Func<bool>>(Original, Replacement))
+            {
+                Assert.Equal(Original(), Replacement());
+                Assert.NotEqual(Original(), redirection.InvokeOriginal(null));
 
-            Assert.Equal(Original(), Replacement());
-            Assert.NotEqual(Original(), redirection.InvokeOriginal(null));
+                redirection.Stop();
 
-            redirection.Stop();
-
-            Assert.Equal(Original(), redirection.InvokeOriginal(null));
+                Assert.Equal(Original(), redirection.InvokeOriginal(null));
+            }
         }
         #endregion
     }

@@ -5,8 +5,15 @@ using Xunit;
 
 namespace Ryder.Tests
 {
+    /// <summary>
+    ///   <see cref="ReactiveRedirection"/> tests.
+    /// </summary>
     public class ReactiveTests
     {
+        /// <summary>
+        ///   Ensures that <see cref="Redirection.Observe(MethodBase)"/> returns a working
+        ///   <see cref="ReactiveRedirection"/>.
+        /// </summary>
         [Fact]
         public void TestReactiveMethod()
         {
@@ -31,6 +38,28 @@ namespace Ryder.Tests
             Assert.NotEqual(DateTime.Now, bday);
 
             Assert.Equal(count, 4);
+        }
+
+        /// <summary>
+        ///   Ensures that <see cref="Redirection.Observe(MethodBase, Action{RedirectionContext}, Action{Exception})"/>
+        ///   returns a working <see cref="RedirectionObserver"/>.
+        /// </summary>
+        [Fact]
+        public void TestBuiltInObserver()
+        {
+            DateTime birthday = new DateTime(1955, 10, 28);
+            MethodInfo method = typeof(DateTime)
+                .GetProperty(nameof(DateTime.Now), BindingFlags.Static | BindingFlags.Public)
+                .GetGetMethod();
+
+            Assert.NotEqual(DateTime.Now, birthday);
+
+            using (Redirection.Observe(method, ctx => ctx.ReturnValue = birthday))
+            {
+                Assert.Equal(DateTime.Now, birthday);
+            }
+
+            Assert.NotEqual(DateTime.Now, birthday);
         }
     }
 }

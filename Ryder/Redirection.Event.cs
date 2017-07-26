@@ -44,7 +44,7 @@ namespace Ryder
             if (original.AddMethod != null)
             {
                 if (replacement.AddMethod == null)
-                    throw new ArgumentException("", nameof(replacement));
+                    throw new ArgumentException("An add method must be defined.", nameof(replacement));
 
                 AddRedirection = new MethodRedirection(original.AddMethod, replacement.AddMethod, start);
             }
@@ -52,7 +52,7 @@ namespace Ryder
             if (original.RemoveMethod != null)
             {
                 if (replacement.RemoveMethod == null)
-                    throw new ArgumentException("", nameof(replacement));
+                    throw new ArgumentException("A remove method must be defined.", nameof(replacement));
 
                 RemoveRedirection = new MethodRedirection(original.RemoveMethod, replacement.RemoveMethod, start);
             }
@@ -60,7 +60,7 @@ namespace Ryder
             if (original.RaiseMethod != null)
             {
                 if (replacement.RaiseMethod == null)
-                    throw new ArgumentException("", nameof(replacement));
+                    throw new ArgumentException("A raise method must be defined.", nameof(replacement));
 
                 RaiseRedirection = new MethodRedirection(original.RaiseMethod, replacement.RaiseMethod, start);
             }

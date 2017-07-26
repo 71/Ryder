@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- Common properties -->
     <TargetFramework>netstandard1.3</TargetFramework>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <FileVersion>$(Version).0</FileVersion>
 
     <SignAssembly>True</SignAssembly>
@@ -25,7 +25,10 @@
     <PackageId>Ryder</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>First release</PackageReleaseNotes>
+    <PackageReleaseNotes>- Added support for Reactive Extensions (w/o dependency on Rx).
+- Removed dependency to System.Linq.Expressions.
+- Slightly improved some documentation.
+- Bug fixes.</PackageReleaseNotes>
     <PackageTags>redirect hook detours patch emit intercept</PackageTags>
 
     <PackageProjectUrl>https://github.com/6A/Ryder</PackageProjectUrl>
@@ -43,7 +46,6 @@
     <PackageReference Remove="Microsoft.NETLibrary" />
 
     <PackageReference Include="System.Linq" Version="$(SystemPackageVersion)" />
-    <PackageReference Include="System.Linq.Expressions" Version="$(SystemPackageVersion)" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="$(SystemPackageVersion)" />
     <PackageReference Include="System.Reflection.Extensions" Version="$(SystemPackageVersion)" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="$(SystemPackageVersion)" />

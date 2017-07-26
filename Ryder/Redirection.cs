@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Ryder
@@ -79,12 +78,12 @@ namespace Ryder
         public static bool SkipChecks { get; set; }
 
         /// <summary>
-        ///   Redirects calls to the <paramref name="original"/> method
+        ///   Redirects calls to the <paramref name="original"/> method or constructor
         ///   to the <paramref name="replacement"/> method.
         /// </summary>
         /// <param name="original">The <see cref="MethodBase"/> of the method whose calls shall be redirected.</param>
         /// <param name="replacement">The <see cref="MethodBase"/> of the method providing the redirection.</param>
-        public static MethodRedirection Redirect(MethodBase original, MethodBase replacement)
+        private static MethodRedirection RedirectCore(MethodBase original, MethodBase replacement)
         {
             if (original == null)
                 throw new ArgumentNullException(nameof(original));
@@ -96,10 +95,6 @@ namespace Ryder
                 throw new ArgumentException(AbstractError, nameof(original));
             if (replacement.IsAbstract)
                 throw new ArgumentException(AbstractError, nameof(replacement));
-
-            // Check if different kind
-            if (original.IsConstructor != replacement.IsConstructor)
-                throw new ArgumentException("Expected both methods to be of the same kind (ctor or method).", nameof(replacement));
 
             // Skip checks if needed
             if (SkipChecks)
@@ -185,38 +180,48 @@ namespace Ryder
         }
 
         /// <summary>
-        ///   Redirects calls to the <paramref name="original"/> delegate
-        ///   to the <paramref name="replacement"/> delegate.
-        /// </summary>
-        /// <param name="original">The <see cref="Delegate"/> whose calls shall be redirected.</param>
-        /// <param name="replacement">The <see cref="Delegate"/> providing the redirection.</param>
-        public static MethodRedirection Redirect(Delegate original, Delegate replacement)
-        {
-            if (original == null)
-                throw new ArgumentNullException(nameof(original));
-            if (replacement == null)
-                throw new ArgumentNullException(nameof(replacement));
-
-            return Redirect(original.GetMethodInfo(), replacement.GetMethodInfo());
-        }
-
-        /// <summary>
         ///   Redirects calls to the <paramref name="original"/> method
         ///   to the <paramref name="replacement"/> method.
         /// </summary>
+        /// <param name="original">The <see cref="MethodBase"/> of the method whose calls shall be redirected.</param>
+        /// <param name="replacement">The <see cref="MethodBase"/> of the method providing the redirection.</param>
+        public static MethodRedirection Redirect(MethodInfo original, MethodInfo replacement)
+            => RedirectCore(original, replacement);
+
+        /// <summary>
+        ///   Redirects calls to the <paramref name="original"/> constructor
+        ///   to the <paramref name="replacement"/> constructor.
+        /// </summary>
+        /// <param name="original">The <see cref="ConstructorInfo"/> of the constructor whose calls shall be redirected.</param>
+        /// <param name="replacement">The <see cref="ConstructorInfo"/> of the method providing the redirection.</param>
+        public static MethodRedirection Redirect(ConstructorInfo original, MethodInfo replacement)
+            => RedirectCore(original, replacement);
+
+        /// <summary>
+        ///   Redirects calls to the <paramref name="original"/> <see langword="delegate"/>
+        ///   to the <paramref name="replacement"/> <see langword="delegate"/>.
+        /// </summary>
         /// <param name="original">The <see cref="Delegate"/> whose calls shall be redirected.</param>
         /// <param name="replacement">The <see cref="Delegate"/> providing the redirection.</param>
-        public static MethodRedirection Redirect(Expression<Action> original, Expression<Action> replacement)
+        public static MethodRedirection Redirect<TDelegate>(TDelegate original, TDelegate replacement)
+            where TDelegate : class
         {
             if (original == null)
                 throw new ArgumentNullException(nameof(original));
             if (replacement == null)
                 throw new ArgumentNullException(nameof(replacement));
 
-            return Redirect(
-                (original.Body as MethodCallExpression)?.Method ?? throw new ArgumentException("Invalid expression.", nameof(original)),
-                (replacement.Body as MethodCallExpression)?.Method ?? throw new ArgumentException("Invalid expression.", nameof(replacement))
-            );
+            Delegate originalDel = original as Delegate;
+
+            if (originalDel == null)
+                throw new ArgumentException($"Expected a delegate, but got a {original.GetType()}.");
+
+            Delegate replacementDel = replacement as Delegate;
+
+            if (replacementDel == null)
+                throw new ArgumentException($"Expected a delegate, but got a {replacement.GetType()}.");
+
+            return Redirect(originalDel.GetMethodInfo(), replacementDel.GetMethodInfo());
         }
 
 
@@ -269,19 +274,25 @@ namespace Ryder
             if (original.PropertyType != replacement.PropertyType)
                 throw new ArgumentException("Expected same property type.", nameof(replacement));
 
-            // Check match: same declarations
-            if ((original.GetMethod == null) != (replacement.GetMethod == null) ||
-                (original.SetMethod == null) != (replacement.SetMethod == null))
-                throw new ArgumentException(SignatureError, nameof(replacement));
-
+            // Presence of corresponding get and set methods will be checked in the constructor.
             End:
             return new PropertyRedirection(original, replacement, true);
         }
 
 
         /// <summary>
+        /// <para>
         ///   Redirects accesses to the <paramref name="original"/> event
         ///   to the <paramref name="replacement"/> event.
+        /// </para>
+        /// <para>
+        ///   Please be aware that although the <see langword="add"/> and <see langword="remove"/>
+        ///   methods are hooked, a simple redirection cannot redirect compiler-generated event raises.
+        /// </para>
+        /// <para>
+        ///   If you truly want to redirect such calls, make sure you know how default events are compiled,
+        ///   and replace their underlying field through reflection as you wish.
+        /// </para>
         /// </summary>
         /// <param name="original">The <see cref="EventInfo"/> of the event whose accesses shall be redirected.</param>
         /// <param name="replacement">The <see cref="EventInfo"/> of the event providing the redirection.</param>
@@ -327,16 +338,34 @@ namespace Ryder
             if (original.EventHandlerType != replacement.EventHandlerType)
                 throw new ArgumentException("Expected same event handler type.", nameof(replacement));
 
-            // Check match: same declarations
-            if ((original.AddMethod == null) != (replacement.AddMethod == null) ||
-                (original.RemoveMethod == null) != (replacement.RemoveMethod == null) ||
-                (original.RaiseMethod == null) != (replacement.RaiseMethod == null))
-                throw new ArgumentException(SignatureError, nameof(replacement));
-
+            // Presence of corresponding add, remove and raise methods will be checked in the constructor.
             End:
             return new EventRedirection(original, replacement, true);
         }
 
+
+        #region LINQ Expressions
+        // I'm planning to drop support for LINQ expressions, because they're not very useful,
+        // but a big dependency nonetheless.
+#if false
+        /// <summary>
+        ///   Redirects calls to the <paramref name="original"/> method
+        ///   to the <paramref name="replacement"/> method.
+        /// </summary>
+        /// <param name="original">The <see cref="Delegate"/> whose calls shall be redirected.</param>
+        /// <param name="replacement">The <see cref="Delegate"/> providing the redirection.</param>
+        public static MethodRedirection Redirect(Expression<Action> original, Expression<Action> replacement)
+        {
+            if (original == null)
+                throw new ArgumentNullException(nameof(original));
+            if (replacement == null)
+                throw new ArgumentNullException(nameof(replacement));
+
+            return Redirect(
+                (original.Body as MethodCallExpression)?.Method ?? throw new ArgumentException("Invalid expression.", nameof(original)),
+                (replacement.Body as MethodCallExpression)?.Method ?? throw new ArgumentException("Invalid expression.", nameof(replacement))
+            );
+        }
 
         /// <summary>
         ///   Redirects accesses to the <paramref name="original"/> member
@@ -404,6 +433,8 @@ namespace Ryder
         /// </param>
         public static TRedirection Redirect<T, TRedirection>(Expression<Func<T>> original, Expression<Func<T>> replacement)
             where TRedirection : Redirection => (TRedirection)Redirect(original, replacement);
+#endif
+        #endregion
         #endregion
     }
 }

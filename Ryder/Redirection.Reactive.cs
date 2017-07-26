@@ -1,133 +1,43 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Reflection.Emit;
 
 namespace Ryder
 {
-    /// <summary>
-    ///   Represents a dynamic <see cref="MethodRedirection"/> context.
-    /// </summary>
-    public sealed class RedirectionContext
-    {
-        private object returnValue;
-        private object originalReturnValue;
-        private bool hasComputedOriginalReturnValue;
-        private bool isReturnValueSet;
-        private readonly MethodRedirection methodRedirection;
-
-        /// <summary>
-        ///   Gets the object on which the <see cref="Method"/> was called.
-        /// </summary>
-        public object Sender { get; }
-
-        /// <summary>
-        ///   Gets a list of arguments passed to the original method.
-        /// </summary>
-        public ReadOnlyCollection<object> Arguments { get; }
-
-        /// <summary>
-        ///   Gets the <see cref="ReturnType"/> of the hooked method.
-        /// </summary>
-        public Type ReturnType { get; }
-
-        /// <summary>
-        ///   Gets whether or not the <see cref="ReturnType"/> is a value type,
-        ///   that thus cannot be <see langword="null"/>.
-        /// </summary>
-        public bool IsValueTypeReturned { get; }
-
-        /// <summary>
-        ///   Gets the method that called this hook.
-        /// </summary>
-        public MethodBase Method { get; }
-
-        /// <summary>
-        ///   Gets or sets the return value of the call.
-        /// </summary>
-        public object ReturnValue
-        {
-            get => returnValue;
-            set
-            {
-                isReturnValueSet = true;
-
-                if (value == null)
-                {
-                    if (IsValueTypeReturned)
-                        returnValue = Activator.CreateInstance(ReturnType);
-
-                    returnValue = null;
-                    return;
-                }
-
-                if (value.GetType() != ReturnType)
-                    throw new InvalidCastException($"Cannot convert {value.GetType()} to {ReturnType}.");
-
-                returnValue = value;
-            }
-        }
-
-        /// <summary>
-        ///   Gets the return value that should have been returned.
-        /// </summary>
-        public object OriginalReturnValue
-        {
-            get
-            {
-                if (hasComputedOriginalReturnValue)
-                    return originalReturnValue;
-
-                object[] args = new object[Arguments.Count];
-                Arguments.CopyTo(args, 0);
-                
-                hasComputedOriginalReturnValue = true;
-
-                return originalReturnValue = Invoke(args);
-            }
-        }
-
-        internal RedirectionContext(object sender, IList<object> args, MethodRedirection redirection)
-        {
-            Sender = sender;
-            Method = redirection.Original;
-            Arguments = new ReadOnlyCollection<object>(args);
-
-            MethodBase original = redirection.Original;
-
-            if (original is ConstructorInfo ctor)
-                ReturnType = ctor.DeclaringType;
-            else
-                ReturnType = ((MethodInfo)original).ReturnType;
-
-            bool isValueType = IsValueTypeReturned = ReturnType.GetTypeInfo().IsValueType;
-
-            returnValue = isValueType ? Activator.CreateInstance(ReturnType) : null;
-            methodRedirection = redirection;
-        }
-
-        /// <summary>
-        ///   Invokes the original method with the given arguments, and returns its result.
-        /// </summary>
-        public object Invoke(params object[] args) => methodRedirection.InvokeOriginal(Sender, args);
-
-        /// <summary>
-        /// <para>
-        ///   Returns:
-        /// </para>
-        /// <para>
-        ///     - if the return value has been changed by the user, then this value;
-        /// </para>
-        /// <para>
-        ///     - otherwise, the value originally returned.
-        /// </para>
-        /// </summary>
-        internal object GetCustomReturnValueOrOriginal() => isReturnValueSet ? returnValue : OriginalReturnValue;
-    }
-
     partial class Redirection
     {
+        #region Public methods
+        /// <summary>
+        ///   Returns an observable that allows observing the specified <paramref name="method"/>,
+        ///   and hooking its calls, optionally modifying its return type.
+        /// </summary>
+        public static IObservable<RedirectionContext> Observe(MethodBase method)
+        {
+            if (method == null)
+                throw new ArgumentNullException(nameof(method));
+
+            MethodRedirection redirection = CreateDynamicRedirection(method, out int id);
+
+            return new ReactiveRedirection(id, redirection);
+        }
+
+        /// <summary>
+        ///   Observes the specified <paramref name="method"/>, hooking its calls and optionally
+        ///   modifying its return type.
+        /// </summary>
+        /// <returns>An <see cref="IDisposable"/> that can be disposed to disable the hook.</returns>
+        public static IDisposable Observe(MethodBase method, Action<RedirectionContext> action, Action<Exception> onError = null)
+        {
+            if (method == null)
+                throw new ArgumentNullException(nameof(method));
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+
+            return Observe(method).Subscribe(new RedirectionObserver(action, onError));
+        }
+        #endregion
+
         /// <summary>
         /// <para>
         ///   Dictionary that contains all active reactive <see cref="MethodRedirection"/>s.
@@ -138,16 +48,7 @@ namespace Ryder
         /// </summary>
         internal static readonly Dictionary<int, ReactiveRedirection> ObservingRedirections = new Dictionary<int, ReactiveRedirection>();
 
-        /// <summary>
-        ///   Returns an observable that allows observing a method, and hooking its calls.
-        /// </summary>
-        public static IObservable<RedirectionContext> Observe(MethodBase method)
-        {
-            MethodRedirection redirection = CreateDynamicRedirection(method, out int id);
-
-            return new ReactiveRedirection(id, redirection);
-        }
-
+        #region Private utils
         /// <summary>
         ///   <see cref="Random"/> that generates IDs for <see cref="ObservingRedirections"/>.
         /// </summary>
@@ -255,8 +156,10 @@ namespace Ryder
             // Return the redirection
             return new MethodRedirection(method, dyn, false);
         }
+        #endregion
     }
 
+    #region IObservable and IObserver implementations
     /// <summary>
     ///   Represents an observable <see cref="Ryder.Redirection"/>.
     /// </summary>
@@ -273,15 +176,15 @@ namespace Ryder
         public List<IObserver<RedirectionContext>> Observers { get; }
 
         /// <summary>
-        ///   Gets the key of this redirection in <see cref="Ryder.Redirection.ObservingRedirections"/>.
+        ///   The key of this redirection in <see cref="Ryder.Redirection.ObservingRedirections"/>.
         /// </summary>
-        public int Key { get; }
+        private readonly int Key;
 
         internal ReactiveRedirection(int id, MethodRedirection redirection)
         {
             Redirection = redirection;
-            Observers   = new List<IObserver<RedirectionContext>>();
-            Key         = id;
+            Observers = new List<IObserver<RedirectionContext>>();
+            Key = id;
 
             Ryder.Redirection.ObservingRedirections.Add(id, this);
         }
@@ -334,4 +237,39 @@ namespace Ryder
             void IDisposable.Dispose() => Redirection.Unsubscribe(Observer);
         }
     }
+
+    /// <summary>
+    ///   Represents a <see cref="Redirection"/> observer.
+    /// </summary>
+    internal sealed class RedirectionObserver : IObserver<RedirectionContext>
+    {
+        /// <summary>
+        ///   Action to which we'll delegate <see cref="OnNext"/>.
+        /// </summary>
+        private readonly Action<RedirectionContext> NextAction;
+
+        /// <summary>
+        ///   Action to which we'll delegate <see cref="OnError"/>.
+        /// </summary>
+        private readonly Action<Exception> ErrorAction;
+
+        internal RedirectionObserver(Action<RedirectionContext> next, Action<Exception> error)
+        {
+            NextAction = next;
+            ErrorAction = error;
+        }
+
+        /// <inheritdoc />
+        public void OnError(Exception error) => ErrorAction?.Invoke(error);
+
+        /// <inheritdoc />
+        public void OnNext(RedirectionContext value) => NextAction(value);
+
+        /// <inheritdoc />
+        public void OnCompleted()
+        {
+            // Never completes.
+        }
+    }
+    #endregion
 }
