@@ -15,9 +15,7 @@ namespace Ryder
         private static Func<DynamicMethod, RuntimeMethodHandle> MakeFindMethodHandle()
         {
             // Generate the "FindMethodHandle" delegate.
-#if NETSTANDARD_1_5
             const BindingFlags NON_PUBLIC_INSTANCE = BindingFlags.NonPublic | BindingFlags.Instance;
-#endif
 
             DynamicMethod findMethodHandle = new DynamicMethod(
                 nameof(FindMethodHandle),
@@ -29,11 +27,7 @@ namespace Ryder
             il.Emit(OpCodes.Ldarg_0);
 
             MethodInfo getMethodDescriptor = typeof(DynamicMethod)
-#if NETSTANDARD_1_5
                 .GetMethod("GetMethodDescriptor", NON_PUBLIC_INSTANCE);
-#else
-                .GetRuntimeMethod("GetMethodDescriptor", Type.EmptyTypes);
-#endif
 
             if (getMethodDescriptor != null)
             {
@@ -41,13 +35,9 @@ namespace Ryder
             }
             else
             {
-#if NETSTANDARD_1_5
                 FieldInfo handleField = typeof(DynamicMethod).GetField("m_method", NON_PUBLIC_INSTANCE)
-                                     ?? typeof(DynamicMethod).GetField("mhandle", NON_PUBLIC_INSTANCE);
-#else
-                FieldInfo handleField = typeof(DynamicMethod).GetRuntimeField("m_method")
-                                     ?? typeof(DynamicMethod).GetRuntimeField("mhandle");
-#endif
+                                     ?? typeof(DynamicMethod).GetField("mhandle",  NON_PUBLIC_INSTANCE)
+                                     ?? typeof(DynamicMethod).GetField("m_methodHandle", NON_PUBLIC_INSTANCE);
 
                 il.Emit(OpCodes.Ldfld, handleField);
             }

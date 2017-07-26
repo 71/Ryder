@@ -8,7 +8,7 @@ namespace Ryder
     /// <summary>
     ///   Defines a class that can redirect calls.
     /// </summary>
-    public abstract class Redirection : IDisposable
+    public abstract partial class Redirection : IDisposable
     {
         internal bool isRedirecting;
 
