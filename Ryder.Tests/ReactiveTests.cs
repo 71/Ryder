@@ -15,7 +15,7 @@ namespace Ryder.Tests
                 .GetGetMethod();
 
             int count = 0;
-            DateTime bday = new DateTime(1999, 10, 21);
+            DateTime bday = new DateTime(1955, 10, 28);
 
             using (Redirection.Observe(method)
                               .Where(_ => count++ % 2 == 0)

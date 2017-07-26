@@ -36,6 +36,26 @@ Console.WriteLine(DateTime.Now.ToBinary()); // => 0.
 DateTime now = ((DateTime)r.GetOriginal(null)).ToBinary(); // => A very large number.
 ```
 
+#### Using Reactive Extensions
+```csharp
+MethodInfo method = typeof(DateTime)
+    .GetProperty(nameof(DateTime.Now), BindingFlags.Static | BindingFlags.Public)
+    .GetGetMethod();
+
+int count = 0;
+DateTime bday = new DateTime(1955, 10, 28);
+
+using (Redirection.Observe(method)
+                  .Where(_ => count++ % 2 == 0)
+                  .Subscribe(ctx => ctx.ReturnValue = bday))
+{
+    Assert.Equal(DateTime.Now, bday);
+    Assert.NotEqual(DateTime.Now, bday);
+    Assert.Equal(DateTime.Now, bday);
+    Assert.NotEqual(DateTime.Now, bday);
+}
+```
+
 #### Other features
 ##### Any `Redirection` also defines the following members:
 - `bool IsRedirecting { get; set; }`
