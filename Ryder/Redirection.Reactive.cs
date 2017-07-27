@@ -12,14 +12,14 @@ namespace Ryder
         ///   Returns an observable that allows observing the specified <paramref name="method"/>,
         ///   and hooking its calls, optionally modifying its return type.
         /// </summary>
-        public static IObservable<RedirectionContext> Observe(MethodBase method)
+        public static ObservableRedirection Observe(MethodBase method)
         {
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
 
             MethodRedirection redirection = CreateDynamicRedirection(method, out int id);
 
-            return new ReactiveRedirection(id, redirection);
+            return new ObservableRedirection(id, redirection);
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace Ryder
         ///   This dictionary is used by the generated methods.
         /// </para>
         /// </summary>
-        internal static readonly Dictionary<int, ReactiveRedirection> ObservingRedirections = new Dictionary<int, ReactiveRedirection>();
+        internal static readonly Dictionary<int, ObservableRedirection> ObservingRedirections = new Dictionary<int, ObservableRedirection>();
 
         #region Private utils
         /// <summary>
@@ -61,7 +61,7 @@ namespace Ryder
         private static object OnInvoked(object sender, object[] arguments, int key)
         {
             var reactiveRedirection = ObservingRedirections[key];
-            RedirectionContext value = new RedirectionContext(sender, arguments, reactiveRedirection.Redirection);
+            RedirectionContext value = new RedirectionContext(sender, arguments, reactiveRedirection.UnderlyingRedirection);
 
             foreach (var observer in reactiveRedirection.Observers)
             {
@@ -158,118 +158,4 @@ namespace Ryder
         }
         #endregion
     }
-
-    #region IObservable and IObserver implementations
-    /// <summary>
-    ///   Represents an observable <see cref="Ryder.Redirection"/>.
-    /// </summary>
-    internal sealed class ReactiveRedirection : IObservable<RedirectionContext>, IDisposable
-    {
-        /// <summary>
-        ///   Gets the observed <see cref="MethodRedirection"/>.
-        /// </summary>
-        public MethodRedirection Redirection { get; }
-
-        /// <summary>
-        ///   Gets a list of all observers of the underlying <see cref="MethodRedirection"/>.
-        /// </summary>
-        public List<IObserver<RedirectionContext>> Observers { get; }
-
-        /// <summary>
-        ///   The key of this redirection in <see cref="Ryder.Redirection.ObservingRedirections"/>.
-        /// </summary>
-        private readonly int Key;
-
-        internal ReactiveRedirection(int id, MethodRedirection redirection)
-        {
-            Redirection = redirection;
-            Observers = new List<IObserver<RedirectionContext>>();
-            Key = id;
-
-            Ryder.Redirection.ObservingRedirections.Add(id, this);
-        }
-
-        /// <inheritdoc />
-        public IDisposable Subscribe(IObserver<RedirectionContext> observer)
-        {
-            Observers.Add(observer);
-
-            // Optionally start the redirection, in case it wasn't redirecting calls
-            Redirection.Start();
-
-            return new Disposable(this, observer);
-        }
-
-        /// <summary>
-        ///   Unsubscribes the given <paramref name="observer"/>.
-        /// </summary>
-        private void Unsubscribe(IObserver<RedirectionContext> observer)
-        {
-            Observers.Remove(observer);
-
-            if (Observers.Count == 0)
-                // Stop the redirection, since noone is there to handle it.
-                Redirection.Stop();
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            Redirection.Dispose();
-            Ryder.Redirection.ObservingRedirections.Remove(Key);
-        }
-
-        /// <summary>
-        ///   <see cref="IDisposable"/> returned to observers calling <see cref="Subscribe"/>.
-        /// </summary>
-        private struct Disposable : IDisposable
-        {
-            private readonly ReactiveRedirection Redirection;
-            private readonly IObserver<RedirectionContext> Observer;
-
-            internal Disposable(ReactiveRedirection redirection, IObserver<RedirectionContext> observer)
-            {
-                Redirection = redirection;
-                Observer = observer;
-            }
-
-            /// <inheritdoc />
-            void IDisposable.Dispose() => Redirection.Unsubscribe(Observer);
-        }
-    }
-
-    /// <summary>
-    ///   Represents a <see cref="Redirection"/> observer.
-    /// </summary>
-    internal sealed class RedirectionObserver : IObserver<RedirectionContext>
-    {
-        /// <summary>
-        ///   Action to which we'll delegate <see cref="OnNext"/>.
-        /// </summary>
-        private readonly Action<RedirectionContext> NextAction;
-
-        /// <summary>
-        ///   Action to which we'll delegate <see cref="OnError"/>.
-        /// </summary>
-        private readonly Action<Exception> ErrorAction;
-
-        internal RedirectionObserver(Action<RedirectionContext> next, Action<Exception> error)
-        {
-            NextAction = next;
-            ErrorAction = error;
-        }
-
-        /// <inheritdoc />
-        public void OnError(Exception error) => ErrorAction?.Invoke(error);
-
-        /// <inheritdoc />
-        public void OnNext(RedirectionContext value) => NextAction(value);
-
-        /// <inheritdoc />
-        public void OnCompleted()
-        {
-            // Never completes.
-        }
-    }
-    #endregion
 }
