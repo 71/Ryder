@@ -67,7 +67,7 @@ namespace Ryder
                     return;
                 }
 
-                if (value.GetType() != ReturnType)
+                if (ReturnType.IsInstanceOfType(value))
                     throw new InvalidCastException($"Cannot convert {value.GetType()} to {ReturnType}.");
 
                 returnValue = value;
