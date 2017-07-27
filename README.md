@@ -43,6 +43,7 @@ MethodInfo method = typeof(DateTime)
 int count = 0;
 DateTime bday = new DateTime(1955, 10, 28);
 
+// Make "DateTime.get_Now()" return "bday" every two calls.
 using (Redirection.Observe(method)
                   .Where(_ => count++ % 2 == 0)
                   .Subscribe(ctx => ctx.ReturnValue = bday))
