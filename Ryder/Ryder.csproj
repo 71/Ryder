@@ -25,9 +25,7 @@
     <PackageId>Ryder</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>- Added support for Reactive Extensions (w/o dependency on Rx).
-- Removed dependency to System.Linq.Expressions.
-- Slightly improved some documentation.
+    <PackageReleaseNotes>- Improved and made public ObservableRedirection.
 - Bug fixes.</PackageReleaseNotes>
     <PackageTags>redirect hook detours patch emit intercept</PackageTags>
 
