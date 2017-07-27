@@ -132,4 +132,154 @@ namespace Ryder
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CopyToStart(byte[] bytes, IntPtr methodStart) => Marshal.Copy(bytes, 0, methodStart, bytes.Length);
     }
+
+    partial class Redirection
+    {
+        /// <summary>
+        ///   Redirects calls to the <paramref name="original"/> method or constructor
+        ///   to the <paramref name="replacement"/> method.
+        /// </summary>
+        /// <param name="original">The <see cref="MethodBase"/> of the method whose calls shall be redirected.</param>
+        /// <param name="replacement">The <see cref="MethodBase"/> of the method providing the redirection.</param>
+        private static MethodRedirection RedirectCore(MethodBase original, MethodBase replacement)
+        {
+            if (original == null)
+                throw new ArgumentNullException(nameof(original));
+            if (replacement == null)
+                throw new ArgumentNullException(nameof(replacement));
+
+            // Check if abstract
+            if (original.IsAbstract)
+                throw new ArgumentException(AbstractError, nameof(original));
+            if (replacement.IsAbstract)
+                throw new ArgumentException(AbstractError, nameof(replacement));
+
+            // Skip checks if needed
+            if (SkipChecks)
+                goto End;
+
+            // Get return type
+            Type originalReturnType = (original as MethodInfo)?.ReturnType ?? (original as ConstructorInfo)?.DeclaringType;
+
+            if (originalReturnType == null)
+                throw new ArgumentException("Invalid method.", nameof(original));
+
+            Type replacementReturnType = (replacement as MethodInfo)?.ReturnType ?? (replacement as ConstructorInfo)?.DeclaringType;
+
+            if (replacementReturnType == null)
+                throw new ArgumentException("Invalid method.", nameof(replacement));
+
+            // Check return type
+            if (originalReturnType != replacementReturnType)
+                throw new ArgumentException("Expected both methods to have the same return type.", nameof(replacement));
+
+            // Check signature
+            ParameterInfo[] originalParams = original.GetParameters();
+            ParameterInfo[] replacementParams = replacement.GetParameters();
+
+            int length = originalParams.Length;
+            int diff = 0;
+
+            if (!original.IsStatic)
+            {
+                if (replacement.IsStatic)
+                {
+                    // Should have:
+                    // instance i.original(a, b) | static replacement(i, a, b)
+
+                    if (replacementParams.Length == 0 || replacementParams[0].ParameterType != original.DeclaringType)
+                        throw new ArgumentException($"Expected first parameter of type '{original.DeclaringType}'.", nameof(replacement));
+                    if (replacementParams.Length != originalParams.Length + 1)
+                        throw new ArgumentException(SignatureError, nameof(replacement));
+
+                    diff = -1;
+                    // No need to set length, it's already good
+                }
+                else
+                {
+                    // Should have:
+                    // instance i.original(a, b) | instance i.replacement(a, b)
+                    
+                    if (replacementParams.Length != originalParams.Length)
+                        throw new ArgumentException(SignatureError, nameof(replacement));
+                }
+            }
+            else if (!replacement.IsStatic)
+            {
+                // Should have:
+                // static original(i, a, b) | instance i.replacement(a, b)
+
+                if (originalParams.Length == 0 || originalParams[0].ParameterType != replacement.DeclaringType)
+                    throw new ArgumentException($"Expected first parameter of type '{replacement.DeclaringType}'.", nameof(original));
+                if (replacementParams.Length != originalParams.Length - 1)
+                    throw new ArgumentException(SignatureError, nameof(replacement));
+
+                diff = 1;
+                length--;
+            }
+            else
+            {
+                // Should have:
+                // static original(a, b) | static replacement(a, b)
+
+                if (originalParams.Length != replacementParams.Length)
+                    throw new ArgumentException(SignatureError, nameof(replacement));
+            }
+
+            // At this point all parameters will have the same index with "+ diff",
+            // and the parameters not checked in this loop have already been checked. We good.
+            for (int i = diff == -1 ? 1 : 0; i < length; i++)
+            {
+                CheckParameters(originalParams[i + diff], replacementParams[i], nameof(replacement));
+            }
+
+            End:
+            return new MethodRedirection(original, replacement, true);
+        }
+
+        /// <summary>
+        ///   Redirects calls to the <paramref name="original"/> method
+        ///   to the <paramref name="replacement"/> method.
+        /// </summary>
+        /// <param name="original">The <see cref="MethodBase"/> of the method whose calls shall be redirected.</param>
+        /// <param name="replacement">The <see cref="MethodBase"/> of the method providing the redirection.</param>
+        public static MethodRedirection Redirect(MethodInfo original, MethodInfo replacement)
+            => RedirectCore(original, replacement);
+
+        /// <summary>
+        ///   Redirects calls to the <paramref name="original"/> constructor
+        ///   to the <paramref name="replacement"/> constructor.
+        /// </summary>
+        /// <param name="original">The <see cref="ConstructorInfo"/> of the constructor whose calls shall be redirected.</param>
+        /// <param name="replacement">The <see cref="ConstructorInfo"/> of the method providing the redirection.</param>
+        public static MethodRedirection Redirect(ConstructorInfo original, MethodInfo replacement)
+            => RedirectCore(original, replacement);
+
+        /// <summary>
+        ///   Redirects calls to the <paramref name="original"/> <see langword="delegate"/>
+        ///   to the <paramref name="replacement"/> <see langword="delegate"/>.
+        /// </summary>
+        /// <param name="original">The <see cref="Delegate"/> whose calls shall be redirected.</param>
+        /// <param name="replacement">The <see cref="Delegate"/> providing the redirection.</param>
+        public static MethodRedirection Redirect<TDelegate>(TDelegate original, TDelegate replacement)
+            where TDelegate : class
+        {
+            if (original == null)
+                throw new ArgumentNullException(nameof(original));
+            if (replacement == null)
+                throw new ArgumentNullException(nameof(replacement));
+
+            Delegate originalDel = original as Delegate;
+
+            if (originalDel == null)
+                throw new ArgumentException($"Expected a delegate, but got a {original.GetType()}.");
+
+            Delegate replacementDel = replacement as Delegate;
+
+            if (replacementDel == null)
+                throw new ArgumentException($"Expected a delegate, but got a {replacement.GetType()}.");
+
+            return Redirect(originalDel.GetMethodInfo(), replacementDel.GetMethodInfo());
+        }
+    }
 }

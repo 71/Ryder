@@ -139,4 +139,61 @@ namespace Ryder
             SetRedirection?.Dispose();
         }
     }
+
+    partial class Redirection
+    {
+        /// <summary>
+        ///   Redirects accesses to the <paramref name="original"/> property
+        ///   to the <paramref name="replacement"/> property.
+        /// </summary>
+        /// <param name="original">The <see cref="PropertyInfo"/> of the property whose accesses shall be redirected.</param>
+        /// <param name="replacement">The <see cref="PropertyInfo"/> of the property providing the redirection.</param>
+        public static PropertyRedirection Redirect(PropertyInfo original, PropertyInfo replacement)
+        {
+            if (original == null)
+                throw new ArgumentNullException(nameof(original));
+            if (replacement == null)
+                throw new ArgumentNullException(nameof(replacement));
+
+            if (SkipChecks)
+                goto End;
+
+            // Check original
+            MethodInfo anyOriginalMethod = original.GetMethod ?? original.SetMethod;
+
+            if (anyOriginalMethod == null)
+                throw new ArgumentException("The property must define a getter and/or a setter.", nameof(original));
+            if (anyOriginalMethod.IsAbstract)
+                throw new ArgumentException(AbstractError, nameof(original));
+
+            // Check replacement
+            MethodInfo anyReplacementMethod = replacement.GetMethod ?? replacement.SetMethod;
+
+            if (anyReplacementMethod == null)
+                throw new ArgumentException("The property must define a getter and/or a setter.", nameof(replacement));
+            if (anyReplacementMethod.IsAbstract)
+                throw new ArgumentException(AbstractError, nameof(replacement));
+
+            // Check match: static
+            if (!anyOriginalMethod.IsStatic)
+            {
+                if (anyReplacementMethod.IsStatic)
+                    throw new ArgumentException(SignatureError, nameof(replacement));
+
+                // Check match: instance of same type
+                // Actually, I ain't doing it just yet. There are cases where the declaring
+                // type is different.
+                //if (original.DeclaringType != replacement.DeclaringType)
+                //    throw new ArgumentException(SignatureError, nameof(replacement));
+            }
+
+            // Check match: property type
+            if (original.PropertyType != replacement.PropertyType)
+                throw new ArgumentException("Expected same property type.", nameof(replacement));
+
+            // Presence of corresponding get and set methods will be checked in the constructor.
+            End:
+            return new PropertyRedirection(original, replacement, true);
+        }
+    }
 }

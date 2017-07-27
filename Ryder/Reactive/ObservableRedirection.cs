@@ -11,12 +11,12 @@ namespace Ryder
         /// <summary>
         ///   Gets the underlying <see cref="MethodRedirection"/>.
         /// </summary>
-        public MethodRedirection UnderlyingRedirection { get; }
+        internal MethodRedirection UnderlyingRedirection { get; }
 
         /// <summary>
         ///   Gets a list of all observers of the underlying <see cref="MethodRedirection"/>.
         /// </summary>
-        public List<IObserver<RedirectionContext>> Observers { get; }
+        internal List<IObserver<RedirectionContext>> Observers { get; }
 
         /// <summary>
         ///   The key of this redirection in <see cref="Redirection.ObservingRedirections"/>.
@@ -60,6 +60,13 @@ namespace Ryder
         {
             UnderlyingRedirection.Dispose();
             ObservingRedirections.Remove(Key);
+        }
+
+        /// <inheritdoc />
+        public override bool IsRedirecting
+        {
+            get => UnderlyingRedirection.IsRedirecting;
+            set => UnderlyingRedirection.IsRedirecting = value;
         }
 
         /// <inheritdoc />
