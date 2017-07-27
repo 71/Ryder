@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- Common properties -->
     <TargetFramework>netstandard1.3</TargetFramework>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <FileVersion>$(Version).0</FileVersion>
 
     <SignAssembly>True</SignAssembly>
