@@ -47,8 +47,9 @@ namespace Ryder
         ///   Gets or sets the return value of the call.
         /// </para>
         /// <para>
-        ///   If not set manually, then <see cref="OriginalReturnValue"/>
-        ///   will be returned.
+        ///   If not set manually, then <see cref="OriginalReturnValue"/> will be returned,
+        ///   unless the method returns <see langword="void"/>, in which case nothing is returned
+        ///   (and the original method is not called).
         /// </para>
         /// </summary>
         public object ReturnValue
@@ -106,7 +107,7 @@ namespace Ryder
             else
                 ReturnType = ((MethodInfo)original).ReturnType;
 
-            bool isValueType = IsValueTypeReturned = IntrospectionExtensions.GetTypeInfo(ReturnType).IsValueType;
+            bool isValueType = IsValueTypeReturned = ReturnType.GetTypeInfo().IsValueType;
 
             returnValue = isValueType ? Activator.CreateInstance(ReturnType) : null;
             methodRedirection = redirection;
@@ -128,6 +129,12 @@ namespace Ryder
         ///     - otherwise, the value originally returned.
         /// </para>
         /// </summary>
-        internal object GetCustomReturnValueOrOriginal() => isReturnValueSet ? returnValue : OriginalReturnValue;
+        internal object GetCustomReturnValueOrOriginal()
+        {
+            if (ReturnType == typeof(void))
+                return null;
+
+            return isReturnValueSet ? returnValue : OriginalReturnValue;
+        }
     }
 }

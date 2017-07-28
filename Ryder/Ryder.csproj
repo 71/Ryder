@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- Common properties -->
     <TargetFramework>netstandard1.3</TargetFramework>
-    <Version>0.3.1</Version>
+    <Version>0.3.2</Version>
     <FileVersion>$(Version).0</FileVersion>
 
     <SignAssembly>True</SignAssembly>
@@ -25,8 +25,7 @@
     <PackageId>Ryder</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>- Improved and made public ObservableRedirection.
-- Bug fixes.</PackageReleaseNotes>
+    <PackageReleaseNotes>- Fixed distributed package.</PackageReleaseNotes>
     <PackageTags>redirect hook detours patch emit intercept</PackageTags>
 
     <PackageProjectUrl>https://github.com/6A/Ryder</PackageProjectUrl>

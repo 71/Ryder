@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 
 namespace Ryder
 {
@@ -9,12 +8,12 @@ namespace Ryder
     internal sealed class RedirectionObserver : IObserver<RedirectionContext>
     {
         /// <summary>
-        ///   Action to which we'll delegate <see cref="OnNext(Ryder.RedirectionContext)"/>.
+        ///   Action to which we'll delegate <see cref="OnNext(RedirectionContext)"/>.
         /// </summary>
         private readonly Action<RedirectionContext> NextAction;
 
         /// <summary>
-        ///   Action to which we'll delegate <see cref="OnError(System.Exception)"/>.
+        ///   Action to which we'll delegate <see cref="OnError(Exception)"/>.
         /// </summary>
         private readonly Action<Exception> ErrorAction;
 
