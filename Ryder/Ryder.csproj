@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- Common properties -->
     <TargetFramework>netstandard1.3</TargetFramework>
-    <Version>0.3.3</Version>
+    <Version>0.3.5</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version).0</FileVersion>
 
@@ -14,7 +14,7 @@
     <GenerateDocumentationFile Condition=" '$(Configuration)' == 'Release' ">True</GenerateDocumentationFile>
     <GeneratePackageOnBuild Condition=" '$(Configuration)' == 'Release' ">True</GeneratePackageOnBuild>
 
-    <SystemPackageVersion>4.3.0</SystemPackageVersion>
+    <SystemPackageVersion>4.1.0</SystemPackageVersion>
 
     <!-- NuGet properties -->
     <Summary>Minimal .NET Core library used to redirect calls from one method to another.</Summary>
@@ -28,7 +28,10 @@
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes>- Improved Reactive support.
 - Add Delegate constraint to Redirect&lt;TDelegate&gt;.
-- Fixed distributed package.</PackageReleaseNotes>
+- Fixed distributed package.
+- Removed AnyConstraint.Analyzer dependency.
+- Replaced 'System.Linq' dependency by 'System.Collections'.
+- Improved dependencies to System.*.</PackageReleaseNotes>
     <PackageTags>redirect hook detours patch emit intercept</PackageTags>
 
     <PackageProjectUrl>https://github.com/6A/Ryder</PackageProjectUrl>
@@ -44,9 +47,9 @@
 
   <ItemGroup Label="Packages">
     <PackageReference Remove="Microsoft.NETLibrary" />
-    <PackageReference Include="AnyConstraint.Analyzer" Version="1.0.0" />
+    <PackageReference Include="AnyConstraint.Analyzer" Version="1.0.0" PrivateAssets="All" />
 
-    <PackageReference Include="System.Linq" Version="$(SystemPackageVersion)" />
+    <PackageReference Include="System.Collections" Version="$(SystemPackageVersion)" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="$(SystemPackageVersion)" />
     <PackageReference Include="System.Reflection.Extensions" Version="$(SystemPackageVersion)" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="$(SystemPackageVersion)" />
