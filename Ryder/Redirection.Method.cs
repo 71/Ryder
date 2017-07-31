@@ -261,25 +261,14 @@ namespace Ryder
         /// </summary>
         /// <param name="original">The <see cref="Delegate"/> whose calls shall be redirected.</param>
         /// <param name="replacement">The <see cref="Delegate"/> providing the redirection.</param>
-        public static MethodRedirection Redirect<TDelegate>(TDelegate original, TDelegate replacement)
-            where TDelegate : class
+        public static MethodRedirection Redirect<TDelegate>(TDelegate original, TDelegate replacement) where TDelegate : Delegate
         {
             if (original == null)
                 throw new ArgumentNullException(nameof(original));
             if (replacement == null)
                 throw new ArgumentNullException(nameof(replacement));
 
-            Delegate originalDel = original as Delegate;
-
-            if (originalDel == null)
-                throw new ArgumentException($"Expected a delegate, but got a {original.GetType()}.");
-
-            Delegate replacementDel = replacement as Delegate;
-
-            if (replacementDel == null)
-                throw new ArgumentException($"Expected a delegate, but got a {replacement.GetType()}.");
-
-            return Redirect(originalDel.GetMethodInfo(), replacementDel.GetMethodInfo());
+            return Redirect(original.GetMethodInfo(), replacement.GetMethodInfo());
         }
     }
 }
