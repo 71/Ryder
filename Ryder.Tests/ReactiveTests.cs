@@ -7,13 +7,13 @@ using Xunit;
 namespace Ryder.Tests
 {
     /// <summary>
-    ///   <see cref="ReactiveRedirection"/> tests.
+    ///   <see cref="ObservableRedirection"/> tests.
     /// </summary>
     public class ReactiveTests
     {
         /// <summary>
         ///   Ensures that <see cref="Redirection.Observe(MethodBase)"/> returns a working
-        ///   <see cref="ReactiveRedirection"/>.
+        ///   <see cref="ObservableRedirection"/>.
         /// </summary>
         [Fact]
         public void TestReactiveMethod()

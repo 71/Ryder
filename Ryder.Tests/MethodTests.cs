@@ -145,5 +145,13 @@ namespace Ryder.Tests
             }
         }
         #endregion
+
+        #region Constructors
+        [Fact]
+        public void TestConstructors()
+        {
+            // TODO
+        }
+        #endregion
     }
 }
