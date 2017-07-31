@@ -43,7 +43,7 @@ MethodInfo method = typeof(DateTime)
 int count = 0;
 DateTime bday = new DateTime(1955, 10, 28);
 
-// Make "DateTime.get_Now()" return "bday" every two calls.
+// Make "DateTime.get_Now()" return once "bday" every two calls.
 using (Redirection.Observe(method)
                   .Where(_ => count++ % 2 == 0)
                   .Subscribe(ctx => ctx.ReturnValue = bday))
@@ -73,7 +73,7 @@ DateTime.Now.ShouldNotBe(bday);
 All features are tested in [Ryder.Tests](./Ryder.Tests). Please check it out, as it contains some real-world-usage code.
 
 ##### Gloriously unsafe:
-By default, Ryder makes many runtime checks when you create a new `Redirection` ([see by yourself](./Ryder/Redirection.cs)). Should you decide to do some *very* experimental and unsafe stuff, you can disable all those checks by setting the static property `Redirection.SkipChecks` to `true`.
+By default, Ryder makes many runtime checks when you create a new `Redirection` ([see by yourself](./Ryder/Redirection.cs)). However, should you decide to do some *very* experimental and unsafe stuff, disabling all those checks is as easy as setting the static property `Redirection.SkipChecks` to `true`.
 
 ## Installation
 You can install Ryder through the NuGet package manager:
@@ -81,18 +81,17 @@ You can install Ryder through the NuGet package manager:
 Install-Package Ryder
 ```
 
-Alternatively, if you really want the barebones version, you can copy-paste
-[`Ryder.Lightweight.cs`](./Ryder.Lightweight/Ryder.Lightweight.cs) in your project.
+Alternatively, if you don't want to add a dependency, you can copy-paste the
+[`Ryder.Lightweight.cs`](./Ryder.Lightweight/Ryder.Lightweight.cs) file in your project. Caution, however, since this version only provides the `MethodRedirection` (simply called `Redirection`), and performs no safety checks.
 
 ## Additional notes
-- Make sure the method you want to redirect does not get inlined by the JIT; if it is inlined,
-  redirecting it will most likely break stuff in unexpected ways (for example, the method will
-  be correctly redirected, but the next method to be jitted will be incorrect).
-- In order to keep the GC from collecting jitted methods, Ryder keeps static references to them.
-  Those references are only deleted when `Redirection.Dispose()` is called, after which the `Redirection`
-  is no longer guaranteed to work.
+- Make sure the method you want to redirect does not get inlined by the JIT; if it does get inlined, redirecting it will most likely break stuff in unexpected ways, or do nothing at all. Additionally, if the method you redirect hasn't been jitted yet, the same problems may arise.
+- In order to keep the GC from collecting jitted methods, Ryder keeps static references to them. Those references are only deleted when `Redirection.Dispose()` is called, after which the `Redirection` is no longer guaranteed to work.
 
 ## Inspiration
 Ryder is highly inspired by [Harmony](https://github.com/pardeike/Harmony), but tries
-to take a very minimal approach to redirection, instead of providing the ability to patch individual
-instructions. Moreover, it was made with .NET Core in mind.
+to take a very minimal approach to redirection, instead of providing the ability to patch individual instructions. Moreover, it was made with .NET Core in mind.
+
+# Projects using Ryder
+- The [AnyConstraint](https://github.com/6A/AnyConstraint.Analyzer) analyzer uses [Ryder.Lightweight](./Ryder.Lightweight) to allow any constraint to be used, including `Delegate` and `Enum`.
+- [Cometary](https://github.com/6A/Cometary) highly modifies the [Roslyn](https://github.com/dotnet/roslyn) compilation process in order to add custom features to C#.
