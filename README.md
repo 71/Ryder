@@ -1,5 +1,4 @@
-Ryder
-=====
+<h1><img src="./Ryder/Properties/Icon.png" height="80" style="vertical-align:middle"> Ryder</h1>
 
 Ryder is a .NET Core library providing the ability to redirect method calls from
 one method to another. By extension, it can also redirect property accesses, and event

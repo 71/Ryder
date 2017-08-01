@@ -28,10 +28,10 @@
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes>- Further improved Reactive support.</PackageReleaseNotes>
     <PackageTags>redirect hook detours patch emit intercept</PackageTags>
-    <PackageIcon>.\Properties\Icon.png</PackageIcon>
 
     <PackageProjectUrl>https://github.com/6A/Ryder</PackageProjectUrl>
     <PackageLicenseUrl>$(PackageProjectUrl)/blob/master/LICENSE.md</PackageLicenseUrl>
+    <PackageIcon>$(PackageProjectUrl)/blob/master/Ryder/Properties/Icon.png?raw=true</PackageIcon>
 
     <RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
