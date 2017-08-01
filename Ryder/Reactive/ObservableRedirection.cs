@@ -44,6 +44,18 @@ namespace Ryder
         }
 
         /// <summary>
+        ///   Subscribes to the <see cref="IObserver{T}.OnNext"/> event using the specified <paramref name="callback"/>,
+        ///   and optionally reroute errors to the <paramref name="onError"/> <see cref="Action"/>.
+        /// </summary>
+        public IDisposable Subscribe(Action<RedirectionContext> callback, Action<Exception> onError = null)
+        {
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            return Subscribe(new RedirectionObserver(callback, onError));
+        }
+
+        /// <summary>
         ///   Unsubscribes the given <paramref name="observer"/>.
         /// </summary>
         private void Unsubscribe(IObserver<RedirectionContext> observer)

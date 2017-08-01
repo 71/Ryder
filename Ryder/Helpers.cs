@@ -75,7 +75,7 @@ namespace Ryder
             }
         }
 
-        private static RuntimeMethodHandle GetRuntimeMethodHandle(MethodBase method)
+        public static RuntimeMethodHandle GetRuntimeMethodHandle(MethodBase method)
         {
             if (method is DynamicMethod dynamicMethod)
             {
@@ -93,10 +93,8 @@ namespace Ryder
                 .GetValue(method);
         }
 
-        public static IntPtr GetMethodStart(MethodBase method)
+        public static IntPtr GetMethodStart(RuntimeMethodHandle handle)
         {
-            var handle = GetRuntimeMethodHandle(method);
-
             return (IntPtr)typeof(RuntimeMethodHandle)
 #if NETSTANDARD_1_5
                 .GetMethod("GetFunctionPointer", BindingFlags.Instance | BindingFlags.Public)

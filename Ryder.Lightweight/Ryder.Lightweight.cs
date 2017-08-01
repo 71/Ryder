@@ -37,8 +37,11 @@ internal sealed class Redirection
         Replacement = replacement;
 
         // Note: I'm making local copies of the following fields to avoid accessing fields multiple times.
-        IntPtr originalStart = originalMethodStart = Helpers.GetMethodStart(original);
-        IntPtr replacementStart = Helpers.GetMethodStart(replacement);
+        RuntimeMethodHandle originalHandle = Helpers.GetRuntimeMethodHandle(original);
+        RuntimeMethodHandle replacementHandle = Helpers.GetRuntimeMethodHandle(replacement);
+
+        IntPtr originalStart = originalMethodStart = Helpers.GetMethodStart(originalHandle);
+        IntPtr replacementStart = Helpers.GetMethodStart(replacementHandle);
 
         // Edge case: calling this on the same method
         if (originalStart == replacementStart)
@@ -54,14 +57,17 @@ internal sealed class Redirection
 
         Marshal.Copy(originalStart, origBytes, 0, origBytes.Length);
 
-        //Debug.Assert(originalStart.ToInt64() + replBytes.Length < replacementStart.ToInt64(),
-        //             "The original method overlaps on the replacement method; calling the latter will break things.");
-
         if (start)
         {
             CopyToStart(replBytes, originalStart);
             isRedirecting = true;
         }
+
+#if false
+            // TODO: Add support for .NET Standard 2.0 when it actually gets released in VS.
+            RuntimeHelpers.PrepareMethod(originalHandle);
+            RuntimeHelpers.PrepareMethod(replacementHandle);
+#endif
 
         // Save methods in static array to make sure they're not garbage collected
         PersistingMethods.Add(original);
@@ -200,7 +206,7 @@ internal sealed class Redirection
             }
         }
 
-        private static RuntimeMethodHandle GetRuntimeMethodHandle(MethodBase method)
+        public static RuntimeMethodHandle GetRuntimeMethodHandle(MethodBase method)
         {
             if (method is DynamicMethod dynamicMethod)
             {
@@ -218,10 +224,8 @@ internal sealed class Redirection
                 .GetValue(method);
         }
 
-        public static IntPtr GetMethodStart(MethodBase method)
+        public static IntPtr GetMethodStart(RuntimeMethodHandle handle)
         {
-            var handle = GetRuntimeMethodHandle(method);
-
             return (IntPtr)typeof(RuntimeMethodHandle)
 #if NETSTANDARD_1_5
                 .GetMethod("GetFunctionPointer", BindingFlags.Instance | BindingFlags.Public)
