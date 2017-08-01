@@ -1,13 +1,24 @@
-<h1><img src="./Ryder/Properties/Icon.png" height="80" style="vertical-align:middle"> Ryder</h1>
+<p align="center">
+    <img src="./Ryder/Properties/Icon.png" alt="Ryder">
+</p>
 
-Ryder is a .NET Core library providing the ability to redirect method calls from
-one method to another. By extension, it can also redirect property accesses, and event
-subscriptions / raises.
+<p align="center">
+  Ryder is a .NET Core library providing the ability to redirect method calls from one method to another. By extension, it can also redirect property accesses, and event subscriptions / raises.
+</p>
 
-[![NuGet](https://img.shields.io/nuget/v/Ryder.svg)](https://nuget.org/packages/Ryder)
-[![Latest release](https://img.shields.io/github/release/6A/Ryder.svg)](../../releases/latest)
-[![Issues](https://img.shields.io/github/issues-raw/6A/Ryder.svg)](../../issues)
-[![License](https://img.shields.io/github/license/6A/Ryder.svg)](./LICENSE.md)
+<p align="center">
+  <a href="https://nuget.org/packages/Ryder">
+    <img src="https://img.shields.io/nuget/v/Ryder.svg" alt="NuGet">
+  </a>
+  <a href="../../issues">
+    <img src="https://img.shields.io/github/issues-raw/6A/Ryder.svg" alt="Issues">
+  </a>
+  <a href="./LICENSE.md">
+    <img src="https://img.shields.io/github/license/6A/Ryder.svg" alt="License">
+  </a>
+</p>
+
+-----
 
 ## Get started
 #### Redirect a method
