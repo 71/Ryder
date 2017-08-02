@@ -84,26 +84,31 @@ namespace Ryder
             while (ObservingRedirections.ContainsKey(id));
 
             // Creates an array containing all parameter types
+            int diff = method.IsStatic ? 0 : 1;
+
             ParameterInfo[] originalParameters = method.GetParameters();
-            Type[] originalParameterTypes = new Type[originalParameters.Length];
+            Type[] originalParameterTypes = new Type[originalParameters.Length + diff];
+
+            if (diff == 1 /* !method.IsStatic */)
+                originalParameterTypes[0] = method.DeclaringType;
 
             for (int i = 0; i < originalParameters.Length; i++)
             {
-                originalParameterTypes[i] = originalParameters[i].ParameterType;
+                originalParameterTypes[i + diff] = originalParameters[i].ParameterType;
             }
 
             // Create an identical method
             bool isCtor = method is ConstructorInfo;
-            Type returnType = isCtor ? method.DeclaringType : ((MethodInfo)method).ReturnType;
-
-            MethodAttributes attrs = MethodAttributes.Public;
-
-            if (method.IsStatic)
-                attrs |= MethodAttributes.Static;
+            Type returnType = isCtor ? typeof(void) : ((MethodInfo)method).ReturnType;
 
             DynamicMethod dyn = new DynamicMethod(
-                method.Name, attrs, CallingConventions.Standard,
-                returnType, originalParameterTypes, method.DeclaringType, true);
+                name:              method.Name,
+                attributes:        MethodAttributes.Public | MethodAttributes.Static,
+                callingConvention: CallingConventions.Standard,
+                returnType:        returnType,
+                parameterTypes:    originalParameterTypes,
+                owner:             method.DeclaringType,
+                skipVisibility:    true);
 
             // Make the method call the observable
             ILGenerator il = dyn.GetILGenerator();
@@ -112,21 +117,32 @@ namespace Ryder
                 // the following comments describe what's happening in the generated method.
 
                 // Emit "this", or "null"
-                il.Emit(method.IsStatic ? OpCodes.Ldnull : OpCodes.Ldarg_0);
+                if (method.IsStatic)
+                {
+                    il.Emit(OpCodes.Ldnull);
+                }
+                else
+                {
+                    il.Emit(OpCodes.Ldarg_0);
+
+                    if (method.DeclaringType.GetTypeInfo().IsValueType)
+                    {
+                        il.Emit(OpCodes.Ldobj, method.DeclaringType);
+                        il.Emit(OpCodes.Box, method.DeclaringType);
+                    }
+                }
 
                 // Create an array containing all parameters
                 il.Emit(OpCodes.Ldc_I4, originalParameters.Length);
                 il.Emit(OpCodes.Newarr, typeof(object));
 
-                int diff = method.IsStatic ? 0 : 1;
-
                 for (int i = 0; i < originalParameters.Length; i++)
                 {
                     il.Emit(OpCodes.Dup);
                     il.Emit(OpCodes.Ldc_I4, i);
-                    il.Emit(OpCodes.Ldloc, i + diff);
+                    il.Emit(OpCodes.Ldarg, i + diff);
 
-                    Type parameterType = originalParameterTypes[i];
+                    Type parameterType = originalParameterTypes[i + diff];
 
                     if (parameterType.GetTypeInfo().IsValueType)
                         il.Emit(OpCodes.Box, parameterType);
@@ -143,7 +159,7 @@ namespace Ryder
 
                 // Return returned result
                 // (But first, cast it if needed)
-                if (isCtor || returnType == typeof(void))
+                if (returnType == typeof(void))
                     il.Emit(OpCodes.Pop);
                 else if (returnType.GetTypeInfo().IsValueType)
                     il.Emit(OpCodes.Unbox_Any, returnType);

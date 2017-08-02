@@ -148,14 +148,15 @@ namespace Ryder
         /// </summary>
         /// <param name="original">The <see cref="PropertyInfo"/> of the property whose accesses shall be redirected.</param>
         /// <param name="replacement">The <see cref="PropertyInfo"/> of the property providing the redirection.</param>
-        public static PropertyRedirection Redirect(PropertyInfo original, PropertyInfo replacement)
+        /// <param name="skipChecks">If <see langword="true"/>, some safety checks will be omitted.</param>
+        public static PropertyRedirection Redirect(PropertyInfo original, PropertyInfo replacement, bool skipChecks = false)
         {
             if (original == null)
                 throw new ArgumentNullException(nameof(original));
             if (replacement == null)
                 throw new ArgumentNullException(nameof(replacement));
 
-            if (SkipChecks)
+            if (skipChecks)
                 goto End;
 
             // Check original

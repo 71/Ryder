@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- Common properties -->
     <TargetFramework>netstandard1.3</TargetFramework>
-    <Version>0.4.0</Version>
+    <Version>0.4.1</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version).0</FileVersion>
 
@@ -26,12 +26,14 @@
     <PackageId>Ryder</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>- Further improved Reactive support.</PackageReleaseNotes>
+    <PackageReleaseNotes>- Further improved Reactive support.
+- Fixed multiple bugs related to automatically-generated methods.
+- Added logo.</PackageReleaseNotes>
     <PackageTags>redirect hook detours patch emit intercept</PackageTags>
 
     <PackageProjectUrl>https://github.com/6A/Ryder</PackageProjectUrl>
     <PackageLicenseUrl>$(PackageProjectUrl)/blob/master/LICENSE.md</PackageLicenseUrl>
-    <PackageIcon>$(PackageProjectUrl)/blob/master/Ryder/Properties/Icon.png?raw=true</PackageIcon>
+    <PackageIconUrl>$(PackageProjectUrl)/blob/master/Ryder/Properties/Icon.png?raw=true</PackageIconUrl>
 
     <RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Reflection;
 
 namespace Ryder
@@ -59,22 +58,6 @@ namespace Ryder
             if (a.IsOut != b.IsOut || a.IsIn != b.IsIn)
                 throw new ArgumentException($"Expected parameters '{a}' and '{b}' to have the same signature.", paramName);
         }
-
-        /// <summary>
-        /// <para>
-        ///   Gets or sets whether or not some checks should be disabled when creating
-        ///   a <see cref="Redirection"/>.
-        /// </para>
-        /// <para>
-        ///   Warning: Those checks are done for a reason, but may, in some cases, keep something
-        ///   completely legal from happing.
-        /// </para>
-        /// </summary>
-        /// <seealso href="https://github.com/6A/Ryder/blob/master/Ryder/Redirection.cs">
-        ///   Code for this class, to see what checks are done, and what checks can be skipped.
-        /// </seealso>
-        [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static bool SkipChecks { get; set; }
 
         #region LINQ Expressions
         // I'm planning to drop support for LINQ expressions, because they're not very useful,

@@ -147,21 +147,21 @@ namespace Ryder
         /// </summary>
         /// <param name="original">The <see cref="MethodBase"/> of the method whose calls shall be redirected.</param>
         /// <param name="replacement">The <see cref="MethodBase"/> of the method providing the redirection.</param>
-        private static MethodRedirection RedirectCore(MethodBase original, MethodBase replacement)
+        /// <param name="skipChecks">If <see langword="true"/>, some safety checks will be omitted.</param>
+        private static MethodRedirection RedirectCore(MethodBase original, MethodBase replacement, bool skipChecks)
         {
             if (original == null)
                 throw new ArgumentNullException(nameof(original));
             if (replacement == null)
                 throw new ArgumentNullException(nameof(replacement));
 
-            // Check if abstract
-            if (original.IsAbstract)
-                throw new ArgumentException(AbstractError, nameof(original));
+            // Check if replacement is abstract
+            // We allow original abstract methods, though
             if (replacement.IsAbstract)
                 throw new ArgumentException(AbstractError, nameof(replacement));
 
             // Skip checks if needed
-            if (SkipChecks)
+            if (skipChecks)
                 goto End;
 
             // Get return type
@@ -176,8 +176,9 @@ namespace Ryder
                 throw new ArgumentException("Invalid method.", nameof(replacement));
 
             // Check return type
-            if (originalReturnType != replacementReturnType)
-                throw new ArgumentException("Expected both methods to have the same return type.", nameof(replacement));
+            if (!originalReturnType.IsAssignableFrom(replacementReturnType) &&
+                !replacementReturnType.IsAssignableFrom(originalReturnType))
+                throw new ArgumentException("Expected both methods to return compatible types.", nameof(replacement));
 
             // Check signature
             ParameterInfo[] originalParams = original.GetParameters();
@@ -193,10 +194,17 @@ namespace Ryder
                     // Should have:
                     // instance i.original(a, b) | static replacement(i, a, b)
 
-                    if (replacementParams.Length == 0 || replacementParams[0].ParameterType != original.DeclaringType)
+                    if (replacementParams.Length == 0)
                         throw new ArgumentException($"Expected first parameter of type '{original.DeclaringType}'.", nameof(replacement));
                     if (replacementParams.Length != originalParams.Length + 1)
                         throw new ArgumentException(SignatureError, nameof(replacement));
+
+                    Type replThisType = replacementParams[0].ParameterType;
+                    Type origThisType = original.DeclaringType;
+
+                    if (!replThisType.IsAssignableFrom(origThisType) &&
+                        !origThisType.IsAssignableFrom(replThisType))
+                        throw new ArgumentException($"Expected first parameter assignable to or from '{origThisType}'.", nameof(replacement));
 
                     diff = -1;
                     // No need to set length, it's already good
@@ -215,10 +223,17 @@ namespace Ryder
                 // Should have:
                 // static original(i, a, b) | instance i.replacement(a, b)
 
-                if (originalParams.Length == 0 || originalParams[0].ParameterType != replacement.DeclaringType)
+                if (originalParams.Length == 0)
                     throw new ArgumentException($"Expected first parameter of type '{replacement.DeclaringType}'.", nameof(original));
                 if (replacementParams.Length != originalParams.Length - 1)
                     throw new ArgumentException(SignatureError, nameof(replacement));
+
+                Type replThisType = replacement.DeclaringType;
+                Type origThisType = originalParams[0].ParameterType;
+
+                if (!replThisType.IsAssignableFrom(origThisType) &&
+                    !origThisType.IsAssignableFrom(replThisType))
+                    throw new ArgumentException($"Expected first parameter assignable to or from '{origThisType}'.", nameof(replacement));
 
                 diff = 1;
                 length--;
@@ -249,8 +264,16 @@ namespace Ryder
         /// </summary>
         /// <param name="original">The <see cref="MethodBase"/> of the method whose calls shall be redirected.</param>
         /// <param name="replacement">The <see cref="MethodBase"/> of the method providing the redirection.</param>
-        public static MethodRedirection Redirect(MethodInfo original, MethodInfo replacement)
-            => RedirectCore(original, replacement);
+        /// <param name="skipChecks">If <see langword="true"/>, some safety checks will be omitted.</param>
+        public static MethodRedirection Redirect(MethodInfo original, MethodInfo replacement, bool skipChecks = false)
+        {
+            if (original == null)
+                throw new ArgumentNullException(nameof(original));
+            if (replacement == null)
+                throw new ArgumentNullException(nameof(replacement));
+
+            return RedirectCore(original, replacement, skipChecks);
+        }
 
         /// <summary>
         ///   Redirects calls to the <paramref name="original"/> constructor
@@ -258,8 +281,16 @@ namespace Ryder
         /// </summary>
         /// <param name="original">The <see cref="ConstructorInfo"/> of the constructor whose calls shall be redirected.</param>
         /// <param name="replacement">The <see cref="ConstructorInfo"/> of the method providing the redirection.</param>
-        public static MethodRedirection Redirect(ConstructorInfo original, MethodInfo replacement)
-            => RedirectCore(original, replacement);
+        /// <param name="skipChecks">If <see langword="true"/>, some safety checks will be omitted.</param>
+        public static MethodRedirection Redirect(ConstructorInfo original, MethodInfo replacement, bool skipChecks = false)
+        {
+            if (original == null)
+                throw new ArgumentNullException(nameof(original));
+            if (replacement == null)
+                throw new ArgumentNullException(nameof(replacement));
+
+            return RedirectCore(original, replacement, skipChecks);
+        }
 
         /// <summary>
         ///   Redirects calls to the <paramref name="original"/> <see langword="delegate"/>
@@ -267,14 +298,16 @@ namespace Ryder
         /// </summary>
         /// <param name="original">The <see cref="Delegate"/> whose calls shall be redirected.</param>
         /// <param name="replacement">The <see cref="Delegate"/> providing the redirection.</param>
-        public static MethodRedirection Redirect<TDelegate>(TDelegate original, TDelegate replacement) where TDelegate : Delegate
+        /// <param name="skipChecks">If <see langword="true"/>, some safety checks will be omitted.</param>
+        public static MethodRedirection Redirect<TDelegate>(TDelegate original, TDelegate replacement, bool skipChecks = false)
+            where TDelegate : Delegate
         {
             if (original == null)
                 throw new ArgumentNullException(nameof(original));
             if (replacement == null)
                 throw new ArgumentNullException(nameof(replacement));
 
-            return Redirect(original.GetMethodInfo(), replacement.GetMethodInfo());
+            return RedirectCore(original.GetMethodInfo(), replacement.GetMethodInfo(), skipChecks);
         }
     }
 }
