@@ -79,11 +79,14 @@ DateTime.Now.ShouldNotBe(bday);
 - `PropertyRedirection`: `Redirect(Expression<..>, Expression<..>)`, `Redirect(PropertyInfo, PropertyInfo)`.
 - `EventRedirection`: `Redirect(Expression<..>, Expression<..>)`, `Redirect(EventInfo, EventInfo)`.
 
-##### Tests
+##### Tests:
 All features are tested in [Ryder.Tests](./Ryder.Tests). Please check it out, as it contains some real-world-usage code.
 
 ##### Gloriously unsafe:
-By default, Ryder makes many runtime checks when you create a new `Redirection` ([see by yourself](./Ryder/Redirection.cs)). However, should you decide to do some *very* experimental and unsafe stuff, disabling all those checks is as easy as setting the static property `Redirection.SkipChecks` to `true`.
+By default, Ryder makes many safety checks when you create a new `Redirection` ([see by yourself](./Ryder/Redirection.cs)). However, should you decide to do some experimental things, disabling all those checks is as easy as setting the `skipChecks` parameter available on all `Redirect` methods to `true`.
+
+##### Implicit JIT checks:
+When creating a `Redirection`, Ryder will ensure that the methods you use have already been jitted. If they haven't, they will be compiled automatically.
 
 ## Installation
 You can install Ryder through the NuGet package manager:
