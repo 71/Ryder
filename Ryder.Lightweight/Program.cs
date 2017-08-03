@@ -141,6 +141,17 @@ namespace Ryder.Lightweight
                     )
                 );
 
+                // Change helpers class extension methods to normal methods
+                var extMethods = helpersClass.DescendantNodes()
+                                             .OfType<MethodDeclarationSyntax>()
+                                             .Where(x => x.ParameterList.DescendantTokens().Any(tok => tok.Kind() == SyntaxKind.ThisKeyword));
+                var extMethodsNames = extMethods.Select(x => x.Identifier.Text);
+
+                helpersClass = helpersClass.ReplaceNodes(
+                    helpersClass.DescendantNodes().OfType<ParameterSyntax>().Where(x => x.Modifiers.Any(SyntaxKind.ThisKeyword)),
+                    (x,_) => x.WithModifiers(x.Modifiers.Remove(x.Modifiers.First(y => y.Kind() == SyntaxKind.ThisKeyword)))
+                );
+
                 // Disable overrides
                 var members = methodRedirectionClass.Members;
 
@@ -199,6 +210,15 @@ namespace Ryder.Lightweight
                 MemberDeclarationSyntax @namespace = ns == null
                     ? (MemberDeclarationSyntax)methodRedirectionClass
                     : SyntaxFactory.NamespaceDeclaration(SyntaxFactory.ParseName(ns)).AddMembers(methodRedirectionClass);
+
+                var extCalls = @namespace.DescendantNodes()
+                                         .OfType<InvocationExpressionSyntax>()
+                                         .Where(x => x.Expression is MemberAccessExpressionSyntax access && extMethodsNames.Contains(access.Name.Identifier.Text));
+                var helpersAccess = SyntaxFactory.IdentifierName("Helpers");
+
+                @namespace = @namespace.ReplaceNodes(
+                    extCalls,
+                    (x, _) => SyntaxFactory.InvocationExpression(((MemberAccessExpressionSyntax)x.Expression).WithExpression(helpersAccess)).WithArgumentList(x.ArgumentList.WithArguments(x.ArgumentList.Arguments.Insert(0, SyntaxFactory.Argument(((MemberAccessExpressionSyntax)x.Expression).Expression)))));
 
                 // Generate syntax root
                 CompilationUnitSyntax root = SyntaxFactory.CompilationUnit()

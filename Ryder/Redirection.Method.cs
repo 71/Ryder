@@ -32,21 +32,44 @@ namespace Ryder
         /// </summary>
         public MethodBase Replacement { get; }
 
-        internal MethodRedirection(MethodBase original, MethodBase replacement, bool start = false)
+        internal MethodRedirection(MethodBase original, MethodBase replacement, bool start)
         {
             Original = original;
             Replacement = replacement;
 
             // Note: I'm making local copies of the following fields to avoid accessing fields multiple times.
-            RuntimeMethodHandle originalHandle = Helpers.GetRuntimeMethodHandle(original);
-            RuntimeMethodHandle replacementHandle = Helpers.GetRuntimeMethodHandle(replacement);
+            RuntimeMethodHandle originalHandle = original.GetRuntimeMethodHandle();
+            RuntimeMethodHandle replacementHandle = replacement.GetRuntimeMethodHandle();
 
-            IntPtr originalStart = originalMethodStart = Helpers.GetMethodStart(originalHandle);
-            IntPtr replacementStart = Helpers.GetMethodStart(replacementHandle);
+            const string JittedError = "The specified method hasn't been jitted yet, and thus cannot be used in a redirection.";
+
+            // Fetch their respective start
+            IntPtr originalStart = originalHandle.GetMethodStart();
+            IntPtr replacementStart = replacementHandle.GetMethodStart();
 
             // Edge case: calling this on the same method
             if (originalStart == replacementStart)
                 throw new InvalidOperationException("Cannot redirect a method to itself.");
+
+            // Make sure they're jitted
+            if (!originalStart.HasBeenCompiled())
+            {
+                if (!Helpers.TryPrepareMethod(original, originalHandle))
+                    throw new ArgumentException(JittedError, nameof(original));
+
+                originalStart = originalHandle.GetMethodStart();
+            }
+
+            if (!replacementStart.HasBeenCompiled())
+            {
+                if (!Helpers.TryPrepareMethod(replacement, replacementHandle))
+                    throw new ArgumentException(JittedError, nameof(replacement));
+
+                replacementStart = replacementHandle.GetMethodStart();
+            }
+
+            // Copy local value to field
+            originalMethodStart = originalStart;
 
             // Make sure the memory is readable on Windows
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -63,12 +86,6 @@ namespace Ryder
                 CopyToStart(replBytes, originalStart);
                 isRedirecting = true;
             }
-
-#if false
-            // TODO: Add support for .NET Standard 2.0 when it actually gets released in VS.
-            RuntimeHelpers.PrepareMethod(originalHandle);
-            RuntimeHelpers.PrepareMethod(replacementHandle);
-#endif
 
             // Save methods in static array to make sure they're not garbage collected
             PersistingMethods.Add(original);
@@ -258,6 +275,7 @@ namespace Ryder
             return new MethodRedirection(original, replacement, true);
         }
 
+        #region Redirect
         /// <summary>
         ///   Redirects calls to the <paramref name="original"/> method
         ///   to the <paramref name="replacement"/> method.
@@ -309,5 +327,6 @@ namespace Ryder
 
             return RedirectCore(original.GetMethodInfo(), replacement.GetMethodInfo(), skipChecks);
         }
+        #endregion
     }
 }
