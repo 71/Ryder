@@ -1,8 +1,8 @@
-﻿using Shouldly;
-using System;
+﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Shouldly;
 using Xunit;
 
 namespace Ryder.Tests
@@ -13,7 +13,7 @@ namespace Ryder.Tests
     public class HelpersTests
     {
         /// <summary>
-        ///   Try to see if the fixup corresponds.
+        ///   Tests Ryder's ability to determine whether or not a method is uninitialized.
         /// </summary>
         [Fact]
         public void TestUninitializedMethods()
@@ -55,6 +55,15 @@ namespace Ryder.Tests
                 // In any case, the new method shouldn't be a fixup
                 newStart.HasBeenCompiled().ShouldBeTrue();
             }
+        }
+
+        /// <summary>
+        ///   Tests Ryder's ability to determine whether or not a method is inlined.
+        /// </summary>
+        [Fact]
+        public void TestInlinedMethods()
+        {
+            // TODO
         }
     }
 }

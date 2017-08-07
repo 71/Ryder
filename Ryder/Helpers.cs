@@ -37,7 +37,8 @@ namespace Ryder
             DynamicMethod findMethodHandle = new DynamicMethod(
                 nameof(FindMethodHandleOfDynamicMethod),
                 typeof(RuntimeMethodHandle),
-                new[] { typeof(DynamicMethod) });
+                new[] { typeof(DynamicMethod) },
+                typeof(DynamicMethod), true);
 
             ILGenerator il = findMethodHandle.GetILGenerator(16);
 
@@ -73,7 +74,8 @@ namespace Ryder
             DynamicMethod getMethodHandle = new DynamicMethod(
                 nameof(GetMethodHandle),
                 typeof(RuntimeMethodHandle),
-                new[] { typeof(MethodBase) }, true);
+                new[] { typeof(MethodBase) },
+                typeof(RuntimeMethodHandle), true);
 
             ILGenerator il = getMethodHandle.GetILGenerator(16);
 
@@ -93,7 +95,8 @@ namespace Ryder
             DynamicMethod getFunctionPointer = new DynamicMethod(
                 nameof(GetFunctionPointer),
                 typeof(IntPtr),
-                new[] { typeof(RuntimeMethodHandle) }, true);
+                new[] { typeof(RuntimeMethodHandle) },
+                typeof(RuntimeMethodHandle), true);
 
             ILGenerator il = getFunctionPointer.GetILGenerator(16);
 
