@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- Common properties -->
     <TargetFramework>netstandard1.3</TargetFramework>
-    <Version>0.5.1</Version>
+    <Version>0.5.2</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version).0</FileVersion>
 
@@ -19,7 +19,7 @@
     <!-- NuGet properties -->
     <Summary>Minimal .NET Standard library used to redirect calls from one method to another.</Summary>
     <Description>$(Summary) Ryder also exists as a single lightweight .cs file; please see the repository.</Description>
-    <Copyright>Copyright 2017 (C) Gregoire Geis</Copyright>
+    <Copyright>Copyright 2017 (c) Gregoire Geis</Copyright>
     <Authors>Gregoire Geis</Authors>
     
     <Title>Ryder</Title>
@@ -28,7 +28,8 @@
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes>- Methods will now be automatically compiled if needed.
 - Performance improvements by switching from reflection to reflection.emit.
-- Fixed reflection error encountered in .NET Framework.</PackageReleaseNotes>
+- Fixed reflection error encountered in .NET Framework.
+- Made TryPrepare method public, JIT compilation is now fully automatic.</PackageReleaseNotes>
     <PackageTags>redirect hook detours patch emit intercept</PackageTags>
 
     <PackageProjectUrl>https://github.com/6A/Ryder</PackageProjectUrl>

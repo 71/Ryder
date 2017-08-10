@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Reflection;
 
 namespace Ryder
@@ -48,6 +49,16 @@ namespace Ryder
         public abstract void Dispose();
 
         #region Static
+        /// <summary>
+        ///   Attempts to force JIT compilation of the given <paramref name="method"/>,
+        ///   and returns a value describing whether or not it was successfully prepared.
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool TryPrepare(MethodBase method)
+        {
+            return Helpers.TryPrepareMethod(method, method.GetRuntimeMethodHandle());
+        }
+
         private const string AbstractError = "Expected non-abstract method.";
         private const string SignatureError = "Expected same signature.";
 

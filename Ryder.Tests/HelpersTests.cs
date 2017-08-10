@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Shouldly;
 using Xunit;
 
@@ -63,7 +65,34 @@ namespace Ryder.Tests
         [Fact]
         public void TestInlinedMethods()
         {
-            // TODO
+            MethodInfo inlinedMethod = GetType().GetMethod(nameof(LikelyInlined), BindingFlags.Static | BindingFlags.Public);
+            MethodInfo nonInlinedMethod = GetType().GetMethod(nameof(UnlikelyInlined), BindingFlags.Static | BindingFlags.Public);
+
+            IntPtr inlinedStart = inlinedMethod.GetRuntimeMethodHandle().GetMethodStart();
+            IntPtr nonInlinedStart = nonInlinedMethod.GetRuntimeMethodHandle().GetMethodStart();
+
+            inlinedStart.HasBeenCompiled().ShouldBeFalse();
+            nonInlinedStart.HasBeenCompiled().ShouldBeFalse();
+
+            LikelyInlined().ShouldBe(UnlikelyInlined());
+
+            inlinedStart = inlinedMethod.GetRuntimeMethodHandle().GetMethodStart();
+            nonInlinedStart = nonInlinedMethod.GetRuntimeMethodHandle().GetMethodStart();
+
+            inlinedStart.HasBeenCompiled().ShouldBeTrue();
+            nonInlinedStart.HasBeenCompiled().ShouldBeTrue();
+
+            byte[] inlinedBytes = new byte[12];
+            byte[] nonInlinedBytes = new byte[12];
+
+            Marshal.Copy(inlinedStart, inlinedBytes, 0, 12);
+            Marshal.Copy(nonInlinedStart, nonInlinedBytes, 0, 12);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LikelyInlined() => 42;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int UnlikelyInlined() => 42;
     }
 }

@@ -312,7 +312,9 @@ namespace Ryder
 
             Marshal.Copy(methodStart, buffer, 0, ANALYZED_FIXUP_SIZE);
 
-            return buffer[0] != 0xE8 || buffer[4] != 0x5F || buffer[5] != 0x5E;
+            // I don't exactly understand everything, but if I'm right, precode can be simply identified
+            // by the 0xE8 byte, nothing else can start with it.
+            return buffer[0] != 0xE8/* || buffer[4] != 0x5F || buffer[5] != 0x5E*/;
         }
 
         /// <summary>
