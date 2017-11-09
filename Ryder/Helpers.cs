@@ -317,10 +317,49 @@ namespace Ryder
             return buffer[0] != 0xE8/* || buffer[4] != 0x5F || buffer[5] != 0x5E*/;
         }
 
-        /// <summary>
-        ///   Changes the protection of a memory region.
-        /// </summary>
-        [DllImport("kernel32.dll")]
-        public static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, int flNewProtect, out int lpflOldProtect);
+        private const string LIBSYSTEM = "libSystem.dylib";
+        private const string KERNEL32  = "kernel32.dll";
+        private const string LIBC      = "libc.so.6";
+
+        [DllImport(KERNEL32)]
+        internal static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, int flNewProtect, out int lpflOldProtect);
+
+        [DllImport(LIBC, CallingConvention = CallingConvention.Cdecl, SetLastError = true, EntryPoint = "mprotect")]
+        internal static extern int LinuxProtect(IntPtr start, ulong len, int prot);
+
+        [DllImport(LIBC, CallingConvention = CallingConvention.Cdecl, SetLastError = true, EntryPoint = "getpagesize")]
+        internal static extern long LinuxGetPageSize();
+
+        [DllImport(LIBSYSTEM, CallingConvention = CallingConvention.Cdecl, SetLastError = true, EntryPoint = "mprotect")]
+        internal static extern int OsxProtect(IntPtr start, ulong len, int prot);
+
+        [DllImport(LIBSYSTEM, CallingConvention = CallingConvention.Cdecl, SetLastError = true, EntryPoint = "getpagesize")]
+        internal static extern long OsxGetPageSize();
+
+        internal static void AllowRW(IntPtr address)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                if (VirtualProtect(address, new UIntPtr(1), 0x40 /* PAGE_EXECUTE_READWRITE */, out var _))
+                    return;
+
+                goto Error;
+            }
+
+            bool isLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+
+            long pagesize = isLinux ? LinuxGetPageSize() : OsxGetPageSize();
+            long start = address.ToInt64();
+            long pagestart = start & -pagesize;
+
+            int buffsize = IntPtr.Size == sizeof(int) ? 6 : 12;
+            var mprotect = isLinux ? new Func<IntPtr, ulong, int, int>(LinuxProtect) : OsxProtect;
+
+            if (mprotect(new IntPtr(pagestart), (ulong) (start + buffsize - pagestart), 0x7 /* PROT_READ_WRITE_EXEC */) == 0)
+                return;
+
+            Error:
+            throw new Exception($"Unable to make method memory readable and writable. Error code: {Marshal.GetLastWin32Error()}");
+        }
     }
 }

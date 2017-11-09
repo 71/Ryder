@@ -41,7 +41,7 @@ namespace Ryder
             RuntimeMethodHandle originalHandle = original.GetRuntimeMethodHandle();
             RuntimeMethodHandle replacementHandle = replacement.GetRuntimeMethodHandle();
 
-            const string JittedError = "The specified method hasn't been jitted yet, and thus cannot be used in a redirection.";
+            const string JIT_ERROR = "The specified method hasn't been jitted yet, and thus cannot be used in a redirection.";
 
             // Fetch their respective start
             IntPtr originalStart = originalHandle.GetMethodStart();
@@ -51,11 +51,18 @@ namespace Ryder
             if (originalStart == replacementStart)
                 throw new InvalidOperationException("Cannot redirect a method to itself.");
 
+            // Edge case: methods are too close to one another
+            int difference = (int)Math.Abs(originalStart.ToInt64() - replacementStart.ToInt64());
+            int sizeOfPtr = Marshal.SizeOf<IntPtr>();
+
+            if ((sizeOfPtr == sizeof(long) && difference < 13) || (sizeOfPtr == sizeof(int) && difference < 7))
+                throw new InvalidOperationException("Unable to redirect methods whose bodies are too close to one another.");
+
             // Make sure they're jitted
             if (!originalStart.HasBeenCompiled())
             {
                 if (!Helpers.TryPrepareMethod(original, originalHandle))
-                    throw new ArgumentException(JittedError, nameof(original));
+                    throw new ArgumentException(JIT_ERROR, nameof(original));
 
                 originalStart = originalHandle.GetMethodStart();
             }
@@ -63,7 +70,7 @@ namespace Ryder
             if (!replacementStart.HasBeenCompiled())
             {
                 if (!Helpers.TryPrepareMethod(replacement, replacementHandle))
-                    throw new ArgumentException(JittedError, nameof(replacement));
+                    throw new ArgumentException(JIT_ERROR, nameof(replacement));
 
                 replacementStart = replacementHandle.GetMethodStart();
             }
@@ -71,9 +78,9 @@ namespace Ryder
             // Copy local value to field
             originalMethodStart = originalStart;
 
-            // Make sure the memory is readable on Windows
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                Helpers.VirtualProtect(originalStart, new UIntPtr(1), 0x40 /* PAGE_EXECUTE_READWRITE */, out var _);
+            // In some cases, the memory might need to be readable / writable:
+            // Make the memory region rw right away just in case.
+            Helpers.AllowRW(originalStart);
 
             // Save bytes to change to redirect method
             byte[] replBytes = replacementBytes = Helpers.GetJmpBytes(replacementStart);

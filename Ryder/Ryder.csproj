@@ -3,33 +3,31 @@
   <PropertyGroup>
     <!-- Common properties -->
     <TargetFramework>netstandard1.3</TargetFramework>
-    <Version>0.5.2</Version>
+    <Version>0.6.0</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version).0</FileVersion>
 
     <SignAssembly>True</SignAssembly>
+    <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">True</PublicSign>
     <AssemblyOriginatorKeyFile>Ryder.snk</AssemblyOriginatorKeyFile>
     <DisableImplicitFrameworkReferences>True</DisableImplicitFrameworkReferences>
 
     <GenerateDocumentationFile Condition=" '$(Configuration)' == 'Release' ">True</GenerateDocumentationFile>
     <GeneratePackageOnBuild Condition=" '$(Configuration)' == 'Release' ">True</GeneratePackageOnBuild>
 
-    <SystemPackageVersion>4.1.0</SystemPackageVersion>
+    <SystemPackageVersion>4.3.0</SystemPackageVersion>
 
     <!-- NuGet properties -->
     <Summary>Minimal .NET Standard library used to redirect calls from one method to another.</Summary>
-    <Description>$(Summary) Ryder also exists as a single lightweight .cs file; please see the repository.</Description>
+    <Description>$(Summary)\n Ryder also exists as a single lightweight .cs file; please see the repository.</Description>
     <Copyright>Copyright 2017 (c) Gregoire Geis</Copyright>
     <Authors>Gregoire Geis</Authors>
-    
+
     <Title>Ryder</Title>
     <PackageId>Ryder</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>- Methods will now be automatically compiled if needed.
-- Performance improvements by switching from reflection to reflection.emit.
-- Fixed reflection error encountered in .NET Framework.
-- Made TryPrepare method public, JIT compilation is now fully automatic.</PackageReleaseNotes>
+    <PackageReleaseNotes>- Ryder now works on Linux.</PackageReleaseNotes>
     <PackageTags>redirect hook detours patch emit intercept</PackageTags>
 
     <PackageProjectUrl>https://github.com/6A/Ryder</PackageProjectUrl>
@@ -41,12 +39,14 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(BuildingInsideVisualStudio)' == 'True' ">
-    <PostBuildEvent>dotnet "$(SolutionDir)$(SolutionName).Lightweight\bin\$(Configuration)\$(SolutionName).Lightweight.dll" --directory "$(SolutionDir)$(SolutionName)" --output "$(SolutionDir)$(SolutionName).Lightweight\$(SolutionName).Lightweight.cs"</PostBuildEvent>
+    <LightweightDir>$(SolutionDir)$(SolutionName).Lightweight</LightweightDir>
+    <PostBuildEvent>dotnet "$(LightweightDir)\bin\$(Configuration)\$(SolutionName).Lightweight.dll" --directory "$(SolutionDir)$(SolutionName)" --output "$(LightweightDir)\$(SolutionName).Lightweight.cs"</PostBuildEvent>
   </PropertyGroup>
 
   <ItemGroup Label="Packages">
     <PackageReference Remove="Microsoft.NETLibrary" />
-    <PackageReference Include="AnyConstraint.Analyzer" Version="1.0.0" PrivateAssets="All" />
+
+    <PackageReference Include="AnyConstraint.Analyzer" Version="1.1.0" PrivateAssets="All" />
 
     <PackageReference Include="System.Collections" Version="$(SystemPackageVersion)" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="$(SystemPackageVersion)" />
