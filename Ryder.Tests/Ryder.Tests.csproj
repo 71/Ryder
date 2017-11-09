@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>    
-    <TargetFramework>netcoreapp1.1</TargetFramework>
-
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    
     <SignAssembly>True</SignAssembly>
+    <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">True</PublicSign>
     <AssemblyOriginatorKeyFile>..\Ryder\Ryder.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
