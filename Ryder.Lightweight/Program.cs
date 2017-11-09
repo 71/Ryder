@@ -189,20 +189,21 @@ namespace Ryder.Lightweight
                     )
                 );
 
-                // Add docs
                 const string DOCS = @"
 /// <summary>
 ///   Provides the ability to redirect calls from one method to another.
 /// </summary>
 ";
 
+                var disposableType = SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName(nameof(IDisposable)));
+
                 methodRedirectionClass = methodRedirectionClass.WithMembers(members)
                     // Add docs
                     .WithLeadingTrivia(SyntaxFactory.Comment(DOCS))
                     // Rename to 'Redirection'
                     .WithIdentifier(SyntaxFactory.Identifier("Redirection"))
-                    // Disable inheritance
-                    .WithBaseList(null)
+                    // Disable inheritance, but implement IDisposable
+                    .WithBaseList(SyntaxFactory.BaseList().AddTypes(disposableType))
                     // Embed helpers, missing field
                     .AddMembers(field, helpersClass);
 
