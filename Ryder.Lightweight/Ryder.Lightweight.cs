@@ -43,7 +43,7 @@ namespace Ryder.Lightweight
             RuntimeMethodHandle originalHandle = Helpers.GetRuntimeMethodHandle(original);
             RuntimeMethodHandle replacementHandle = Helpers.GetRuntimeMethodHandle(replacement);
 
-            const string JittedError = "The specified method hasn't been jitted yet, and thus cannot be used in a redirection.";
+            const string JIT_ERROR = "The specified method hasn't been jitted yet, and thus cannot be used in a redirection.";
 
             // Fetch their respective start
             IntPtr originalStart = Helpers.GetMethodStart(originalHandle);
@@ -53,11 +53,18 @@ namespace Ryder.Lightweight
             if (originalStart == replacementStart)
                 throw new InvalidOperationException("Cannot redirect a method to itself.");
 
+            // Edge case: methods are too close to one another
+            int difference = (int)Math.Abs(originalStart.ToInt64() - replacementStart.ToInt64());
+            int sizeOfPtr = Marshal.SizeOf<IntPtr>();
+
+            if ((sizeOfPtr == sizeof(long) && difference < 13) || (sizeOfPtr == sizeof(int) && difference < 7))
+                throw new InvalidOperationException("Unable to redirect methods whose bodies are too close to one another.");
+
             // Make sure they're jitted
             if (!Helpers.HasBeenCompiled(originalStart))
             {
                 if (!Helpers.TryPrepareMethod(original, originalHandle))
-                    throw new ArgumentException(JittedError, nameof(original));
+                    throw new ArgumentException(JIT_ERROR, nameof(original));
 
                 originalStart = Helpers.GetMethodStart(originalHandle);
             }
@@ -65,7 +72,7 @@ namespace Ryder.Lightweight
             if (!Helpers.HasBeenCompiled(replacementStart))
             {
                 if (!Helpers.TryPrepareMethod(replacement, replacementHandle))
-                    throw new ArgumentException(JittedError, nameof(replacement));
+                    throw new ArgumentException(JIT_ERROR, nameof(replacement));
 
                 replacementStart = Helpers.GetMethodStart(replacementHandle);
             }
@@ -73,9 +80,9 @@ namespace Ryder.Lightweight
             // Copy local value to field
             originalMethodStart = originalStart;
 
-            // Make sure the memory is readable on Windows
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                Helpers.VirtualProtect(originalStart, new UIntPtr(1), 0x40 /* PAGE_EXECUTE_READWRITE */, out var _);
+            // In some cases, the memory might need to be readable / writable:
+            // Make the memory region rw right away just in case.
+            Helpers.AllowRW(originalStart);
 
             // Save bytes to change to redirect method
             byte[] replBytes = replacementBytes = Helpers.GetJmpBytes(replacementStart);
@@ -465,11 +472,50 @@ namespace Ryder.Lightweight
                 return buffer[0] != 0xE8/* || buffer[4] != 0x5F || buffer[5] != 0x5E*/;
             }
 
-            /// <summary>
-            ///   Changes the protection of a memory region.
-            /// </summary>
-            [DllImport("kernel32.dll")]
-            public static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, int flNewProtect, out int lpflOldProtect);
+            private const string LIBSYSTEM = "libSystem.dylib";
+            private const string KERNEL32 = "kernel32.dll";
+            private const string LIBC = "libc.so.6";
+
+            [DllImport(KERNEL32)]
+            internal static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, int flNewProtect, out int lpflOldProtect);
+
+            [DllImport(LIBC, CallingConvention = CallingConvention.Cdecl, SetLastError = true, EntryPoint = "mprotect")]
+            internal static extern int LinuxProtect(IntPtr start, ulong len, int prot);
+
+            [DllImport(LIBC, CallingConvention = CallingConvention.Cdecl, SetLastError = true, EntryPoint = "getpagesize")]
+            internal static extern long LinuxGetPageSize();
+
+            [DllImport(LIBSYSTEM, CallingConvention = CallingConvention.Cdecl, SetLastError = true, EntryPoint = "mprotect")]
+            internal static extern int OsxProtect(IntPtr start, ulong len, int prot);
+
+            [DllImport(LIBSYSTEM, CallingConvention = CallingConvention.Cdecl, SetLastError = true, EntryPoint = "getpagesize")]
+            internal static extern long OsxGetPageSize();
+
+            internal static void AllowRW(IntPtr address)
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    if (VirtualProtect(address, new UIntPtr(1), 0x40 /* PAGE_EXECUTE_READWRITE */, out var _))
+                        return;
+
+                    goto Error;
+                }
+
+                bool isLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+
+                long pagesize = isLinux ? LinuxGetPageSize() : OsxGetPageSize();
+                long start = address.ToInt64();
+                long pagestart = start & -pagesize;
+
+                int buffsize = IntPtr.Size == sizeof(int) ? 6 : 12;
+                var mprotect = isLinux ? new Func<IntPtr, ulong, int, int>(LinuxProtect) : OsxProtect;
+
+                if (mprotect(new IntPtr(pagestart), (ulong)(start + buffsize - pagestart), 0x7 /* PROT_READ_WRITE_EXEC */) == 0)
+                    return;
+
+                Error:
+                throw new Exception($"Unable to make method memory readable and writable. Error code: {Marshal.GetLastWin32Error()}");
+            }
         }
     }
 }
