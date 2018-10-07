@@ -190,9 +190,9 @@ namespace Ryder.Lightweight
                 );
 
                 const string DOCS = @"
-/// <summary>
-///   Provides the ability to redirect calls from one method to another.
-/// </summary>
+    /// <summary>
+    ///   Provides the ability to redirect calls from one method to another.
+    /// </summary>
 ";
 
                 var disposableType = SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName(nameof(IDisposable)));
