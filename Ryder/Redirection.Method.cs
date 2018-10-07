@@ -55,7 +55,7 @@ namespace Ryder
             int difference = (int)Math.Abs(originalStart.ToInt64() - replacementStart.ToInt64());
             int sizeOfPtr = Marshal.SizeOf<IntPtr>();
 
-            if ((sizeOfPtr == sizeof(long) && difference < 13) || (sizeOfPtr == sizeof(int) && difference < 7))
+            if (difference <= Helpers.PatchSize)
                 throw new InvalidOperationException("Unable to redirect methods whose bodies are too close to one another.");
 
             // Make sure they're jitted

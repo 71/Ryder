@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <!-- Common properties -->
-    <TargetFramework>netstandard1.3</TargetFramework>
-    <Version>0.6.0</Version>
+    <TargetFrameworks>netstandard1.3;netstandard2.0</TargetFrameworks>
+    <Version>0.7.0</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version).0</FileVersion>
 
@@ -11,6 +11,7 @@
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">True</PublicSign>
     <AssemblyOriginatorKeyFile>Ryder.snk</AssemblyOriginatorKeyFile>
     <DisableImplicitFrameworkReferences>True</DisableImplicitFrameworkReferences>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 
     <GenerateDocumentationFile Condition=" '$(Configuration)' == 'Release' ">True</GenerateDocumentationFile>
     <GeneratePackageOnBuild Condition=" '$(Configuration)' == 'Release' ">True</GeneratePackageOnBuild>
@@ -20,14 +21,14 @@
     <!-- NuGet properties -->
     <Summary>Minimal .NET Standard library used to redirect calls from one method to another.</Summary>
     <Description>$(Summary)\n Ryder also exists as a single lightweight .cs file; please see the repository.</Description>
-    <Copyright>Copyright 2017 (c) Gregoire Geis</Copyright>
+    <Copyright>Copyright 2017-2018 (c) Gregoire Geis</Copyright>
     <Authors>Gregoire Geis</Authors>
 
     <Title>Ryder</Title>
     <PackageId>Ryder</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>- Ryder now works on Linux.</PackageReleaseNotes>
+    <PackageReleaseNotes>- Added ARM and ARM64 support.</PackageReleaseNotes>
     <PackageTags>redirect hook detours patch emit intercept</PackageTags>
 
     <PackageProjectUrl>https://github.com/6A/Ryder</PackageProjectUrl>
@@ -38,7 +39,7 @@
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(BuildingInsideVisualStudio)' == 'True' ">
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' ">
     <LightweightDir>$(SolutionDir)$(SolutionName).Lightweight</LightweightDir>
     <PostBuildEvent>dotnet "$(LightweightDir)\bin\$(Configuration)\$(SolutionName).Lightweight.dll" --directory "$(SolutionDir)$(SolutionName)" --output "$(LightweightDir)\$(SolutionName).Lightweight.cs"</PostBuildEvent>
   </PropertyGroup>

@@ -18,6 +18,37 @@ namespace Ryder
         private const BindingFlags ALL_INSTANCE = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
         private const BindingFlags NON_PUBLIC_INSTANCE = BindingFlags.NonPublic | BindingFlags.Instance;
 
+        internal static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        internal static readonly bool IsLinux   = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+
+        internal static readonly bool IsARM;
+        internal static readonly int PatchSize;
+
+        private static Exception UnsupportedArchitecture => new PlatformNotSupportedException("Architecture not supported.");
+
+        static Helpers()
+        {
+            switch (RuntimeInformation.ProcessArchitecture)
+            {
+                case Architecture.Arm:
+                    PatchSize = 8;
+                    IsARM = true;
+                    break;
+                case Architecture.Arm64:
+                    PatchSize = 12;
+                    IsARM = true;
+                    break;
+                case Architecture.X86:
+                    PatchSize = 6;
+                    IsARM = false;
+                    break;
+                case Architecture.X64:
+                    PatchSize = 12;
+                    IsARM = false;
+                    break;
+            }
+        }
+
         private static readonly Func<Type, object> GetUninitializedObject
             = typeof(RuntimeHelpers)
                 .GetMethod(nameof(GetUninitializedObject), PUBLIC_STATIC)?
@@ -115,29 +146,72 @@ namespace Ryder
         /// </summary>
         public static byte[] GetJmpBytes(IntPtr destination)
         {
-            if (IntPtr.Size == sizeof(long))
+            switch (RuntimeInformation.ProcessArchitecture)
             {
-                byte[] result = new byte[12];
+                case Architecture.Arm:
+                {
+                    // LDR PC, [PC, #-4]
+                    // $addr
+                    byte[] result = new byte[8];
 
-                result[0] = 0x48;
-                result[1] = 0xB8;
-                result[10] = 0xFF;
-                result[11] = 0xE0;
+                    result[0] = 0x04;
+                    result[1] = 0xF0;
+                    result[2] = 0x1F;
+                    result[3] = 0xE5;
 
-                BitConverter.GetBytes(destination.ToInt64()).CopyTo(result, 2);
+                    BitConverter.GetBytes(destination.ToInt32()).CopyTo(result, 4);
 
-                return result;
-            }
-            else
-            {
-                byte[] result = new byte[6];
+                    return result;
+                }
 
-                result[0] = 0x68;
-                result[5] = 0xC3;
+                case Architecture.Arm64:
+                {
+                    // LDR PC, [PC, #-4]
+                    // $addr
+                    byte[] result = new byte[12];
 
-                BitConverter.GetBytes(destination.ToInt32()).CopyTo(result, 1);
+                    result[0] = 0x04;
+                    result[1] = 0xF0;
+                    result[2] = 0x1F;
+                    result[3] = 0xE5;
 
-                return result;
+                    BitConverter.GetBytes(destination.ToInt64()).CopyTo(result, 4);
+
+                    return result;
+                }
+
+                case Architecture.X64:
+                {
+                    // movabs rax,$addr
+                    // jmp rax
+                    byte[] result = new byte[12];
+
+                    result[0] = 0x48;
+                    result[1] = 0xB8;
+                    result[10] = 0xFF;
+                    result[11] = 0xE0;
+
+                    BitConverter.GetBytes(destination.ToInt64()).CopyTo(result, 2);
+
+                    return result;
+                }
+                
+                case Architecture.X86:
+                {
+                    // push $addr
+                    // ret
+                    byte[] result = new byte[6];
+
+                    result[0] = 0x68;
+                    result[5] = 0xC3;
+
+                    BitConverter.GetBytes(destination.ToInt32()).CopyTo(result, 1);
+
+                    return result;
+                }
+                
+                default:
+                    throw UnsupportedArchitecture;
             }
         }
 
@@ -285,36 +359,96 @@ namespace Ryder
         ///   Returns whether or not the specified <paramref name="methodStart"/> has
         ///   already been compiled by the JIT.
         /// </summary>
-        public static bool HasBeenCompiled(this IntPtr methodStart)
+        public static unsafe bool HasBeenCompiled(this IntPtr methodStart)
         {
-            // According to this:
-            //   https://github.com/dotnet/coreclr/blob/master/Documentation/botr/method-descriptor.md
-            // An uncompiled method will look like
-            //    call ...
-            //    pop esi
-            //    dword ...
-            // In x64, that's
-            //    0xE8 <short>
-            //    ...
-            //    0x5F 0x5E
-            //
-            // According to this:
-            //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/i386/stublinkerx86.h#L660
-            // 0x5F and 0x5E below are constants...
-            // According to these:
-            //   http://ref.x86asm.net/coder64.html#xE8, http://ref.x86asm.net/coder32.html#xE8
-            // CALL <rel32> is the same byte on both x86 and x64, so we should be good.
-            //
-            // Would be nice to try this on x86 though.
+            // Yes this function is unsafe, sorry. If anyone knows how to bitcast longs to ulongs, then I'll take it.
+            // Note: this code has only been tested on x86_64. If anyone can confirm it works on ARM / ARM64 / i386, that'd be great.
 
-            const int ANALYZED_FIXUP_SIZE = 6;
-            byte[] buffer = new byte[ANALYZED_FIXUP_SIZE];
+            switch (RuntimeInformation.ProcessArchitecture)
+            {
+                // According to this:
+                //   https://github.com/dotnet/coreclr/blob/master/Documentation/botr/method-descriptor.md
+                // Uncompiled methods will have have specific 'stubs' bodies with common patterns.
+                //
+                // Therefore, we simply want to know if any of these patterns can be seen.
+                //
+                // Note that theve values change depending on the architecture.
+                case Architecture.X64:
+                    {
+                        ushort* code = (ushort*)methodStart;
 
-            Marshal.Copy(methodStart, buffer, 0, ANALYZED_FIXUP_SIZE);
+                        if (code[0] == 0xBA49)
+                            // Stub precode:
+                            //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/i386/stublinkerx86.h#L502
+                            //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/i386/stublinkerx86.h#L553
+                            return false;
 
-            // I don't exactly understand everything, but if I'm right, precode can be simply identified
-            // by the 0xE8 byte, nothing else can start with it.
-            return buffer[0] != 0xE8/* || buffer[4] != 0x5F || buffer[5] != 0x5E*/;
+                        goto i386Common;
+                    }
+
+                case Architecture.X86:
+                    {
+                        byte* code = (byte*)methodStart;
+
+                        if (code[5] == 0xB8)
+                            // Stub precode:
+                            //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/i386/stublinkerx86.h#L502
+                            //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/i386/stublinkerx86.h#L555
+                            return false;
+
+                        goto i386Common;
+                    }
+
+                i386Common:
+                    {
+                        byte* code = (byte*)methodStart;
+
+                        if (code[0] == 0xE9)
+                            // Fixup precode:
+                            //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/i386/stublinkerx86.h#L723
+                            return false;
+                        
+                        return true;
+                    }
+
+                case Architecture.Arm:
+                    {
+                        ushort* code = (ushort*)methodStart;
+
+                        if (code[0] == 0xf8df && code[1] == 0xc008 && code[2] == 0xf8df && code[3] == 0xf000)
+                            // Stub precode:
+                            //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/arm/stubs.cpp#L714
+                            return false;
+                        
+                        if (code[0] == 0x46fc && code[1] == 0xf8df && code[2] == 0xf004)
+                            // Fixup precode:
+                            //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/arm/stubs.cpp#L782
+                            return false;
+                        
+                        return true;
+                    }
+
+                case Architecture.Arm64:
+                    {
+                        uint* code = (uint*)methodStart;
+
+                        if (code[0] == 0x10000089 && code[1] == 0xA940312A && code[2] == 0xD61F0140)
+                            // Stub precode:
+                            //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/arm64/stubs.cpp#L573
+                            return false;
+
+                        if (code[0] == 0x1000000C && code[1] == 0x5800006B && code[2] == 0xD61F0160)
+                            // Fixup precode:
+                            //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/arm64/stubs.cpp#L639
+                            //   https://github.com/dotnet/coreclr/blob/30f0be906507bef99d951efc5eb9a1664bde9ddd/src/vm/arm64/cgencpu.h#L674
+                            return false;
+                        
+                        return true;
+                    }
+                
+                default:
+                    throw UnsupportedArchitecture;
+            }
         }
 
         private const string LIBSYSTEM = "libSystem.dylib";
@@ -338,7 +472,10 @@ namespace Ryder
 
         internal static void AllowRW(IntPtr address)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (IsARM)
+                return;
+
+            if (IsWindows)
             {
                 if (VirtualProtect(address, new UIntPtr(1), 0x40 /* PAGE_EXECUTE_READWRITE */, out var _))
                     return;
@@ -346,16 +483,15 @@ namespace Ryder
                 goto Error;
             }
 
-            bool isLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
-
-            long pagesize = isLinux ? LinuxGetPageSize() : OsxGetPageSize();
-            long start = address.ToInt64();
+            long pagesize  = IsLinux ? LinuxGetPageSize() : OsxGetPageSize();
+            long start     = address.ToInt64();
             long pagestart = start & -pagesize;
 
             int buffsize = IntPtr.Size == sizeof(int) ? 6 : 12;
-            var mprotect = isLinux ? new Func<IntPtr, ulong, int, int>(LinuxProtect) : OsxProtect;
 
-            if (mprotect(new IntPtr(pagestart), (ulong) (start + buffsize - pagestart), 0x7 /* PROT_READ_WRITE_EXEC */) == 0)
+            if (IsLinux && LinuxProtect(new IntPtr(pagestart), (ulong) (start + buffsize - pagestart), 0x7 /* PROT_READ_WRITE_EXEC */) == 0)
+                return;
+            if (!IsLinux && OsxProtect(new IntPtr(pagestart), (ulong) (start + buffsize - pagestart), 0x7 /* PROT_READ_WRITE_EXEC */) == 0)
                 return;
 
             Error:
