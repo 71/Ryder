@@ -83,10 +83,14 @@ DateTime.Now.ShouldNotBe(bday);
 All features are tested in [Ryder.Tests](./Ryder.Tests). Please check it out, as it contains some real-world-usage code.
 
 ##### Gloriously unsafe:
-By default, Ryder makes many safety checks when you create a new `Redirection` ([see by yourself](./Ryder/Redirection.cs)). However, should you decide to do some experimental things, disabling all those checks is as easy as setting the `skipChecks` parameter available on all `Redirect` methods to `true`.
+By default, Ryder performs many safety checks when you create a new `Redirection`. However, should you decide to do some experimental things, disabling all those checks is as easy as setting the `skipChecks` parameter available on all `Redirect` methods to `true`.
 
 ##### Implicit JIT checks:
 When creating a `Redirection`, Ryder will ensure that the methods you use have already been jitted. If they haven't, they will be compiled automatically.
+
+##### Support for i386, x86_64, arm and arm64
+Ryder is designed to work with `i386`, `x86_64`, `arm` and `arm64` using purely runtime checks. This means that it works everywhere
+without additional configuration. Additionally, Windows, Linux and OSX are all supported.
 
 ## Installation
 You can install Ryder through the NuGet package manager:
