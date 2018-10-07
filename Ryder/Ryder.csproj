@@ -40,8 +40,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' ">
-    <LightweightDir>$(SolutionDir)$(SolutionName).Lightweight</LightweightDir>
-    <PostBuildEvent>dotnet "$(LightweightDir)\bin\$(Configuration)\$(SolutionName).Lightweight.dll" --directory "$(SolutionDir)$(SolutionName)" --output "$(LightweightDir)\$(SolutionName).Lightweight.cs"</PostBuildEvent>
+    <LightweightDir>$(MSBuildThisFileDirectory)..\Ryder.Lightweight\</LightweightDir>
+    <PostBuildEvent>dotnet "$(LightweightDir)bin\$(Configuration)\Ryder.Lightweight.dll" --directory "$(MSBuildThisFileDirectory)." --namespace "Ryder.Lightweight" --output "$(LightweightDir)Ryder.Lightweight.cs"</PostBuildEvent>
   </PropertyGroup>
 
   <ItemGroup Label="Packages">

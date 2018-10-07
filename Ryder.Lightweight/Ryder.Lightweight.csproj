@@ -9,7 +9,7 @@
     <AppendRuntimeIdentifierToOutputPath>False</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(ConfigurationName)' == 'Release' ">
+  <ItemGroup>
     <Compile Remove="Ryder.Lightweight.cs" />
     <None Include="Ryder.Lightweight.cs" />
   </ItemGroup>

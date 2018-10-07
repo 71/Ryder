@@ -25,23 +25,6 @@ namespace Ryder.Lightweight
             string output = Path.Combine(Directory.GetCurrentDirectory(), OUTPUT_FILENAME);
             bool makePublic = false;
 
-#if DEBUG
-            if (dir.EndsWith(nameof(Lightweight), StringComparison.OrdinalIgnoreCase))
-            {
-                dir = Path.Combine(dir, ".." /* Ryder */, "Ryder");
-            }
-            else
-            {
-                output = Path.Combine(dir /* Debug */, ".." /* bin */, ".." /* Ryder.Lightweight */);
-                dir = Path.Combine(output, ".." /* Ryder */, "Ryder");
-                output = Path.Combine(output, OUTPUT_FILENAME);
-            }
-
-            dir = Path.GetFullPath(dir);
-            output = Path.GetFullPath(output);
-            ns = "Ryder.Lightweight";
-#endif
-
             for (int i = 0; i < args.Length; i++)
             {
                 switch (args[i])
