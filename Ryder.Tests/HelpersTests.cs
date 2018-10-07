@@ -3,7 +3,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Shouldly;
 using Xunit;
 
@@ -62,7 +61,7 @@ namespace Ryder.Tests
         /// <summary>
         ///   Tests Ryder's ability to determine whether or not a method is inlined.
         /// </summary>
-        [Fact]
+        [Fact(Skip = "Inlining behavior is not understood enough.")]
         public void TestInlinedMethods()
         {
             MethodInfo inlinedMethod = GetType().GetMethod(nameof(LikelyInlined), BindingFlags.Static | BindingFlags.Public);
@@ -70,6 +69,15 @@ namespace Ryder.Tests
 
             IntPtr inlinedStart = inlinedMethod.GetRuntimeMethodHandle().GetMethodStart();
             IntPtr nonInlinedStart = nonInlinedMethod.GetRuntimeMethodHandle().GetMethodStart();
+
+            // IntPtr inlinedTarget = inlinedStart + Marshal.ReadInt32(inlinedStart + 1) + 5;
+            // IntPtr nonInlinedTarget = nonInlinedStart + Marshal.ReadInt32(nonInlinedStart + 1) + 5;
+
+            // byte[] inl = new byte[16];
+            // byte[] noinl = new byte[16];
+
+            // Marshal.Copy(inlinedTarget, inl, 0, 16);
+            // Marshal.Copy(nonInlinedTarget, noinl, 0, 16);
 
             inlinedStart.HasBeenCompiled().ShouldBeFalse();
             nonInlinedStart.HasBeenCompiled().ShouldBeFalse();
