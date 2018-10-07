@@ -99,7 +99,8 @@ Install-Package Ryder
 ```
 
 Alternatively, if you don't want to add a dependency, you can copy-paste the
-[`Ryder.Lightweight.cs`](./Ryder.Lightweight/Ryder.Lightweight.cs) file in your project. Caution, however, since this version only provides the `MethodRedirection` (simply called `Redirection`), and performs no safety checks.
+[`Ryder.Lightweight.cs`](./Ryder.Lightweight/Ryder.Lightweight.cs) file in your project. Caution, however, since this version only
+provides the `MethodRedirection` class (simply called `Redirection`), and performs no safety checks.
 
 ## Additional notes
 - Make sure the method you want to redirect does not get inlined by the JIT; if it does get inlined, redirecting it will most likely break stuff in unexpected ways, or do nothing at all. Additionally, if the method you redirect hasn't been jitted yet, the same problems may arise.
