@@ -53,7 +53,7 @@ MethodInfo method = typeof(DateTime)
 int count = 0;
 DateTime bday = new DateTime(1955, 10, 28);
 
-// Make "DateTime.get_Now()" return once "bday" every two calls.
+// Make "DateTime.get_Now()" return "bday" every two calls.
 using (Redirection.Observe(method)
                   .Where(_ => count++ % 2 == 0)
                   .Subscribe(ctx => ctx.ReturnValue = bday))
@@ -75,9 +75,9 @@ DateTime.Now.ShouldNotBe(bday);
 - `void Stop()`
 
 ##### Redirections can be created in multiple ways:
-- `MethodRedirection`: `Redirect(Expression<..>, Expression<..>)`, `Redirect(Delegate, Delegate)`, `Redirect(MethodBase, MethodBase)`.
-- `PropertyRedirection`: `Redirect(Expression<..>, Expression<..>)`, `Redirect(PropertyInfo, PropertyInfo)`.
-- `EventRedirection`: `Redirect(Expression<..>, Expression<..>)`, `Redirect(EventInfo, EventInfo)`.
+- `MethodRedirection`: `Redirect(Delegate, Delegate)`, `Redirect(MethodBase, MethodBase)`.
+- `PropertyRedirection`: `Redirect(PropertyInfo, PropertyInfo)`.
+- `EventRedirection`: `Redirect(EventInfo, EventInfo)`.
 
 ##### Tests:
 All features are tested in [Ryder.Tests](./Ryder.Tests). Please check it out, as it contains some real-world-usage code.
