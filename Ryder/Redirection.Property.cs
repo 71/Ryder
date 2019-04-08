@@ -47,7 +47,7 @@ namespace Ryder
             {
                 if (replacement.SetMethod == null)
                     throw new ArgumentException("A set method must be defined.", nameof(replacement));
-                
+
                 SetRedirection = new MethodRedirection(original.SetMethod, replacement.SetMethod, start);
             }
         }

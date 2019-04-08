@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <!-- Common properties -->
-    <TargetFrameworks>netstandard1.3;netstandard2.0</TargetFrameworks>
-    <Version>0.7.0</Version>
+    <TargetFrameworks>netstandard1.3;netstandard2.0;netcoreapp2.2;net45</TargetFrameworks>
+    <Version>0.8.0</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version).0</FileVersion>
 
@@ -21,17 +21,17 @@
     <!-- NuGet properties -->
     <Summary>Minimal .NET Standard library used to redirect calls from one method to another.</Summary>
     <Description>$(Summary)\n Ryder also exists as a single lightweight .cs file; please see the repository.</Description>
-    <Copyright>Copyright 2017-2018 (c) Gregoire Geis</Copyright>
+    <Copyright>Copyright 2017-2019 (c) Gregoire Geis</Copyright>
     <Authors>Gregoire Geis</Authors>
 
     <Title>Ryder</Title>
     <PackageId>Ryder</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>- Added ARM and ARM64 support.</PackageReleaseNotes>
+    <PackageReleaseNotes>- Added support for .NET Framework 4.5 and .NET Core 2.2.</PackageReleaseNotes>
     <PackageTags>redirect hook detours patch emit intercept</PackageTags>
 
-    <PackageProjectUrl>https://github.com/6A/Ryder</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/71/Ryder</PackageProjectUrl>
     <PackageLicenseUrl>$(PackageProjectUrl)/blob/master/LICENSE.md</PackageLicenseUrl>
     <PackageIconUrl>$(PackageProjectUrl)/blob/master/Ryder/Properties/Icon.png?raw=true</PackageIconUrl>
 
@@ -44,10 +44,12 @@
     <PostBuildEvent>dotnet "$(LightweightDir)bin\$(Configuration)\Ryder.Lightweight.dll" --directory "$(MSBuildThisFileDirectory)." --namespace "Ryder.Lightweight" --output "$(LightweightDir)Ryder.Lightweight.cs"</PostBuildEvent>
   </PropertyGroup>
 
-  <ItemGroup Label="Packages">
-    <PackageReference Remove="Microsoft.NETLibrary" />
-
+  <ItemGroup Label="Common packages">
     <PackageReference Include="AnyConstraint.Analyzer" Version="1.1.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup Label=".NET Standard packages" Condition=" '$(TargetFramework)' != 'net45' ">
+    <PackageReference Remove="Microsoft.NETLibrary" />
 
     <PackageReference Include="System.Collections" Version="$(SystemPackageVersion)" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="$(SystemPackageVersion)" />

@@ -55,7 +55,7 @@ namespace Ryder.Lightweight
 
             // Edge case: methods are too close to one another
             int difference = (int)Math.Abs(originalStart.ToInt64() - replacementStart.ToInt64());
-            int sizeOfPtr = Marshal.SizeOf<IntPtr>();
+            int sizeOfPtr = IntPtr.Size;
 
             if (difference <= Helpers.PatchSize)
                 throw new InvalidOperationException("Unable to redirect methods whose bodies are too close to one another.");

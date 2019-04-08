@@ -195,7 +195,7 @@ namespace Ryder
 
                     return result;
                 }
-                
+
                 case Architecture.X86:
                 {
                     // push $addr
@@ -209,7 +209,7 @@ namespace Ryder
 
                     return result;
                 }
-                
+
                 default:
                     throw UnsupportedArchitecture;
             }
@@ -407,7 +407,7 @@ namespace Ryder
                             // Fixup precode:
                             //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/i386/stublinkerx86.h#L723
                             return false;
-                        
+
                         return true;
                     }
 
@@ -419,12 +419,12 @@ namespace Ryder
                             // Stub precode:
                             //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/arm/stubs.cpp#L714
                             return false;
-                        
+
                         if (code[0] == 0x46fc && code[1] == 0xf8df && code[2] == 0xf004)
                             // Fixup precode:
                             //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/arm/stubs.cpp#L782
                             return false;
-                        
+
                         return true;
                     }
 
@@ -442,10 +442,10 @@ namespace Ryder
                             //   https://github.com/dotnet/coreclr/blob/aff5a085543f339a24a5e58f37c1641394155c45/src/vm/arm64/stubs.cpp#L639
                             //   https://github.com/dotnet/coreclr/blob/30f0be906507bef99d951efc5eb9a1664bde9ddd/src/vm/arm64/cgencpu.h#L674
                             return false;
-                        
+
                         return true;
                     }
-                
+
                 default:
                     throw UnsupportedArchitecture;
             }

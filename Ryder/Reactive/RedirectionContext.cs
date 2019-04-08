@@ -87,7 +87,7 @@ namespace Ryder
 
                 object[] args = new object[Arguments.Count];
                 Arguments.CopyTo(args, 0);
-                
+
                 hasComputedOriginalReturnValue = true;
 
                 return originalReturnValue = Invoke(args);

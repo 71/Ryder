@@ -2,6 +2,10 @@
 using System.ComponentModel;
 using System.Reflection;
 
+#if NETCOREAPP2_0
+using System.Linq.Expressions;
+#endif
+
 namespace Ryder
 {
     /// <summary>
@@ -70,10 +74,9 @@ namespace Ryder
                 throw new ArgumentException($"Expected parameters '{a}' and '{b}' to have the same signature.", paramName);
         }
 
-        #region LINQ Expressions
+#if NETCOREAPP2_0
         // I'm planning to drop support for LINQ expressions, because they're not very useful,
         // but a big dependency nonetheless.
-#if false
         /// <summary>
         ///   Redirects calls to the <paramref name="original"/> method
         ///   to the <paramref name="replacement"/> method.
@@ -160,7 +163,6 @@ namespace Ryder
         public static TRedirection Redirect<T, TRedirection>(Expression<Func<T>> original, Expression<Func<T>> replacement)
             where TRedirection : Redirection => (TRedirection)Redirect(original, replacement);
 #endif
-        #endregion
         #endregion
     }
 }
